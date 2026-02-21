@@ -17,6 +17,8 @@ public:
     void render();
     void clean();
 
+    bool getIsRunning() const { return isRunning; }
+
 private:
     Window* gameWindow;
     bool isRunning;
@@ -25,7 +27,9 @@ private:
     Player* player2;
     std::vector<Platform> platforms;
     std::vector<Projectile> bullets;
+    
     SDL_Texture* texProjectile; 
     SDL_Texture* texPlayer1;
     SDL_Texture* texPlayer2;
+    SDL_Texture* texBackground;
 };

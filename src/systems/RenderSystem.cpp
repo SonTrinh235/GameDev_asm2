@@ -6,12 +6,18 @@ void RenderSystem::render(SDL_Renderer* renderer,
                           const Player& p1, const Player& p2,
                           const std::vector<Projectile>& bullets, 
                           const std::vector<Platform>& platforms, 
-                          SDL_Texture* texBullet, SDL_Texture* texP1, SDL_Texture* texP2) 
+                          SDL_Texture* texBullet, SDL_Texture* texP1, SDL_Texture* texP2, SDL_Texture* texBG) 
 {
+    if (texBG) {
+        SDL_RenderTexture(renderer, texBG, NULL, NULL); 
+    } else {
+        SDL_SetRenderDrawColor(renderer, 20, 20, 30, 255);
+        SDL_RenderClear(renderer);
+    }
     // Platforms
     for (const auto& plat : platforms) {
         SDL_FRect rect = plat.getRect();
-        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 180); 
         SDL_RenderFillRect(renderer, &rect);
     }
 

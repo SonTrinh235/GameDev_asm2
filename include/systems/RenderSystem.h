@@ -14,7 +14,8 @@ public:
                 const std::vector<Platform>& platforms, 
                 SDL_Texture* texBullet,
                 SDL_Texture* texP1,
-                SDL_Texture* texP2);
+                SDL_Texture* texP2,
+                SDL_Texture* texBG);
 
 private:
     void renderPlayer(SDL_Renderer* renderer, const Player& player, SDL_Texture* texP1, SDL_Texture* texP2);

@@ -17,7 +17,8 @@ RenderSystem renderSys;
 Game::Game() : gameWindow(nullptr), isRunning(false), 
                 player1(nullptr), player2(nullptr), 
                 texProjectile(nullptr), 
-                texPlayer1(nullptr), texPlayer2(nullptr) {}
+                texPlayer1(nullptr), texPlayer2(nullptr),
+                texBackground(nullptr) {} // Khởi tạo null
 
 Game::~Game() { clean(); }
 
@@ -27,6 +28,14 @@ bool Game::init(const char* title, int width, int height) {
 
     SDL_Renderer* renderer = gameWindow->getRenderer();
 
+    // Background
+    SDL_Surface* surfBG = SDL_LoadBMP("assets/textures/background.bmp");
+    if (surfBG) {
+        texBackground = SDL_CreateTextureFromSurface(renderer, surfBG);
+        SDL_DestroySurface(surfBG);
+    }
+
+    // Load Bullet
     SDL_Surface* surfBullet = SDL_LoadBMP("assets/textures/projectile.bmp");
     if (surfBullet) {
         SDL_SetSurfaceColorKey(surfBullet, true, SDL_MapSurfaceRGB(surfBullet, 0, 0, 0));
@@ -34,6 +43,7 @@ bool Game::init(const char* title, int width, int height) {
         SDL_DestroySurface(surfBullet);
     }
 
+    // Load Players
     SDL_Surface* surfP1 = SDL_LoadBMP("assets/textures/player1.bmp");
     if (surfP1) {
         SDL_SetSurfaceColorKey(surfP1, true, SDL_MapSurfaceRGB(surfP1, 0, 0, 0));
@@ -47,11 +57,14 @@ bool Game::init(const char* title, int width, int height) {
         texPlayer2 = SDL_CreateTextureFromSurface(renderer, surfP2);
         SDL_DestroySurface(surfP2);
     }
-
-    platforms.push_back({0, 550, 800, 50}); 
-    platforms.push_back({100, 400, 200, 20});
-    platforms.push_back({500, 400, 200, 20});
-    platforms.push_back({300, 250, 200, 20});
+    //Below
+    platforms.push_back({70, 500, 630, 50});
+    //Left 
+    platforms.push_back({100, 360, 200, 20});
+    //Right
+    platforms.push_back({550, 345, 200, 20});
+    //Center
+    platforms.push_back({300, 200, 200, 20});
 
     player1 = new Player(1, 150, 300);
     player2 = new Player(2, 600, 300);
@@ -63,11 +76,12 @@ bool Game::init(const char* title, int width, int height) {
 void Game::handleEvents(SDL_Event* event) {
     if (event->type == SDL_EVENT_QUIT) isRunning = false;
 }
-
 void Game::update(float deltaTime) {
     if (!player1 || !player2) return;
     
-    if (player1->hp <= 0 || player2->hp <= 0) return;
+    if (player1->hp <= 0 || player2->hp <= 0) {
+        return;
+    }
 
     int numKeys;
     const bool* keys = SDL_GetKeyboardState(&numKeys);
@@ -87,6 +101,13 @@ void Game::update(float deltaTime) {
     collisionSys.update(*player1, bullets, platforms);
     collisionSys.update(*player2, bullets, platforms);
 
+    if (player1->position.y > 630) {
+        player1->hp = 0;
+    }
+    if (player2->position.y > 630) {
+        player2->hp = 0;
+    }
+
     float rotSpeed = 360.0f / ROT_TIME;
     player1->aimAngle += rotSpeed * deltaTime;
     player2->aimAngle += rotSpeed * deltaTime;
@@ -97,25 +118,16 @@ void Game::render() {
     gameWindow->clear();
     SDL_Renderer* renderer = gameWindow->getRenderer();
 
-    SDL_SetRenderDrawColor(renderer, 60, 60, 60, 255);
-    for (const auto& plat : platforms) {
-        SDL_FRect rect = plat.getRect();
-        SDL_RenderFillRect(renderer, &rect);
-    }
     if (player1 && player2) {
-        renderSys.render(renderer, *player1, *player2, bullets, platforms, texProjectile, texPlayer1, texPlayer2);
-        if (player1->hp <= 0 || player2->hp <= 0) {
-             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
-             SDL_FRect overlay = {0, 0, 800, 600};
-             SDL_RenderFillRect(renderer, &overlay);
-        }
+        renderSys.render(renderer, *player1, *player2, bullets, platforms, 
+                         texProjectile, texPlayer1, texPlayer2, texBackground);
     }
     
     gameWindow->display();
 }
 
 void Game::clean() {
+    if (texBackground) SDL_DestroyTexture(texBackground);
     if (texProjectile) SDL_DestroyTexture(texProjectile);
     if (texPlayer1) SDL_DestroyTexture(texPlayer1);
     if (texPlayer2) SDL_DestroyTexture(texPlayer2);
