@@ -19,10 +19,12 @@ void AmmoSystem::update(Player& player, float deltaTime, std::vector<Projectile>
 
     if (!player.isCharging && player.currentChargeTime > 0) {
         if (player.mana >= MANA_COST && player.shootCooldown <= 0) {
+        // if (player.mana >= (MANA_COST + 0.5 * deltaTime)  && player.shootCooldown <= 0) {
             float ratio = player.currentChargeTime / MAX_CHARGE_TIME;
             float bulletRadius = MIN_BULLET_RADIUS + (MAX_BULLET_RADIUS - MIN_BULLET_RADIUS) * ratio;
             float damage = 10.0f + (ratio * 20.0f); 
-
+            // float totalManaConsume = MANA_COST + 2 * deltaTime;
+            
             float rad = player.aimAngle * (PI / 180.0f);
             float velX = std::cos(rad) * BULLET_SPEED;
             float velY = std::sin(rad) * BULLET_SPEED;

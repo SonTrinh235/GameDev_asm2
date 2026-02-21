@@ -30,7 +30,6 @@ void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets, c
 
         SDL_FRect bulletRect = p.getRect();
         SDL_FRect playerRect = player.getRect();
-        bool hasBounced = false;
 
         if (SDL_HasRectIntersectionFloat(&bulletRect, &playerRect)) {
             if (p.ownerId != player.id) {
@@ -41,33 +40,43 @@ void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets, c
             }
         }
 
-        if (p.position.x <= 0) { p.position.x = 0.1f; p.velocity.x = -p.velocity.x; hasBounced = true; }
-        else if (p.position.x >= SCREEN_WIDTH - p.radius * 2) { p.position.x = (SCREEN_WIDTH - p.radius * 2) - 0.1f; p.velocity.x = -p.velocity.x; hasBounced = true; }
-        
-        if (p.position.y <= 0) { p.position.y = 0.1f; p.velocity.y = -p.velocity.y; hasBounced = true; }
-        else if (p.position.y >= SCREEN_HEIGHT - p.radius * 2) { p.position.y = (SCREEN_HEIGHT - p.radius * 2) - 0.1f; p.velocity.y = -p.velocity.y; hasBounced = true; }
+        if (player.id == 1) {
+            bool hasBounced = false;
 
-        for (const auto& plat : platforms) {
-            SDL_FRect platRect = plat.getRect();
-            SDL_FRect intersection;
-            if (SDL_GetRectIntersectionFloat(&bulletRect, &platRect, &intersection)) {
-                if (intersection.w < intersection.h) {
-                    p.velocity.x = -p.velocity.x;
-                    if (p.position.x < plat.x) p.position.x -= intersection.w;
-                    else p.position.x += intersection.w;
-                } else {
-                    p.velocity.y = -p.velocity.y;
-                    if (p.position.y < plat.y) p.position.y -= intersection.h;
-                    else p.position.y += intersection.h;
-                }
-                hasBounced = true;
-                break;
+            if (p.position.x <= 0) { 
+                p.position.x = 0.1f; p.velocity.x = -p.velocity.x; hasBounced = true; 
+            } else if (p.position.x >= SCREEN_WIDTH - p.radius * 2) { 
+                p.position.x = (SCREEN_WIDTH - p.radius * 2) - 0.1f; p.velocity.x = -p.velocity.x; hasBounced = true; 
             }
-        }
+            
+            if (p.position.y <= 0) { 
+                p.position.y = 0.1f; p.velocity.y = -p.velocity.y; hasBounced = true; 
+            } else if (p.position.y >= SCREEN_HEIGHT - p.radius * 2) { 
+                p.position.y = (SCREEN_HEIGHT - p.radius * 2) - 0.1f; p.velocity.y = -p.velocity.y; hasBounced = true; 
+            }
 
-        if (hasBounced) {
-            p.bounceCount++;
-            if (p.bounceCount >= MAX_BOUNCES) p.active = false;
+            for (const auto& plat : platforms) {
+                SDL_FRect platRect = plat.getRect();
+                SDL_FRect intersection;
+                if (SDL_GetRectIntersectionFloat(&bulletRect, &platRect, &intersection)) {
+                    if (intersection.w < intersection.h) {
+                        p.velocity.x = -p.velocity.x;
+                        if (p.position.x < plat.x) p.position.x -= intersection.w;
+                        else p.position.x += intersection.w;
+                    } else {
+                        p.velocity.y = -p.velocity.y;
+                        if (p.position.y < plat.y) p.position.y -= intersection.h;
+                        else p.position.y += intersection.h;
+                    }
+                    hasBounced = true;
+                    break;
+                }
+            }
+
+            if (hasBounced) {
+                p.bounceCount++;
+                if (p.bounceCount >= MAX_BOUNCES) p.active = false;
+            }
         }
     }
 }
