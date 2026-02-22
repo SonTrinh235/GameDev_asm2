@@ -18,7 +18,8 @@ Game::Game() : gameWindow(nullptr), isRunning(false),
                 player1(nullptr), player2(nullptr), 
                 texProjectile(nullptr), 
                 texPlayer1(nullptr), texPlayer2(nullptr),
-                texBackground(nullptr) {} // Khởi tạo null
+                texWeapon1(nullptr), texWeapon2(nullptr),
+                texBackground(nullptr) {}
 
 Game::~Game() { clean(); }
 
@@ -57,17 +58,30 @@ bool Game::init(const char* title, int width, int height) {
         texPlayer2 = SDL_CreateTextureFromSurface(renderer, surfP2);
         SDL_DestroySurface(surfP2);
     }
-    //Below
-    platforms.push_back({70, 500, 630, 50});
-    //Left 
-    platforms.push_back({100, 360, 200, 20});
-    //Right
-    platforms.push_back({550, 345, 200, 20});
-    //Center
-    platforms.push_back({300, 200, 200, 20});
 
-    player1 = new Player(1, 150, 300);
-    player2 = new Player(2, 600, 300);
+    // THÊM: Load Weapons
+    SDL_Surface* surfW1 = SDL_LoadBMP("assets/textures/weapon1.bmp");
+    if (surfW1) {
+        SDL_SetSurfaceColorKey(surfW1, true, SDL_MapSurfaceRGB(surfW1, 0, 0, 0)); // Xóa nền đen nếu có
+        texWeapon1 = SDL_CreateTextureFromSurface(renderer, surfW1);
+        SDL_DestroySurface(surfW1);
+    }
+
+    SDL_Surface* surfW2 = SDL_LoadBMP("assets/textures/weapon2.bmp");
+    if (surfW2) {
+        SDL_SetSurfaceColorKey(surfW2, true, SDL_MapSurfaceRGB(surfW2, 0, 0, 0));
+        texWeapon2 = SDL_CreateTextureFromSurface(renderer, surfW2);
+        SDL_DestroySurface(surfW2);
+    }
+
+    // Platforms
+    platforms.push_back({70, 500, 630, 50});   // Below
+    platforms.push_back({100, 360, 200, 20});  // Left 
+    platforms.push_back({550, 345, 200, 20});  // Right
+    // platforms.push_back({300, 200, 200, 20});  // Center
+
+    player1 = new Player(1, 100, 100); 
+    player2 = new Player(2, 572, 100); 
 
     isRunning = true;
     return true;
@@ -76,6 +90,7 @@ bool Game::init(const char* title, int width, int height) {
 void Game::handleEvents(SDL_Event* event) {
     if (event->type == SDL_EVENT_QUIT) isRunning = false;
 }
+
 void Game::update(float deltaTime) {
     if (!player1 || !player2) return;
     
@@ -120,7 +135,15 @@ void Game::render() {
 
     if (player1 && player2) {
         renderSys.render(renderer, *player1, *player2, bullets, platforms, 
-                         texProjectile, texPlayer1, texPlayer2, texBackground);
+                         texProjectile, texPlayer1, texPlayer2, texBackground, 
+                         texWeapon1, texWeapon2);
+
+        if (player1->hp <= 0 || player2->hp <= 0) {
+             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
+             SDL_FRect overlay = {0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT};
+             SDL_RenderFillRect(renderer, &overlay);
+        }
     }
     
     gameWindow->display();
@@ -128,6 +151,8 @@ void Game::render() {
 
 void Game::clean() {
     if (texBackground) SDL_DestroyTexture(texBackground);
+    if (texWeapon1) SDL_DestroyTexture(texWeapon1);
+    if (texWeapon2) SDL_DestroyTexture(texWeapon2);
     if (texProjectile) SDL_DestroyTexture(texProjectile);
     if (texPlayer1) SDL_DestroyTexture(texPlayer1);
     if (texPlayer2) SDL_DestroyTexture(texPlayer2);

@@ -14,6 +14,7 @@ SRCS = src/main.cpp \
        src/entities/Projectile.cpp \
        src/entities/Platform.cpp \
        src/systems/AmmoSystem.cpp \
+       src/systems/RenderSystem.cpp \
        src/systems/CollisionSystem.cpp
 
 all:

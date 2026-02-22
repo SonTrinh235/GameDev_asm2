@@ -31,5 +31,7 @@ private:
     SDL_Texture* texProjectile; 
     SDL_Texture* texPlayer1;
     SDL_Texture* texPlayer2;
+    SDL_Texture* texWeapon1;
+    SDL_Texture* texWeapon2;
     SDL_Texture* texBackground;
 };

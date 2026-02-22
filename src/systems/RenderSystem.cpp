@@ -6,7 +6,9 @@ void RenderSystem::render(SDL_Renderer* renderer,
                           const Player& p1, const Player& p2,
                           const std::vector<Projectile>& bullets, 
                           const std::vector<Platform>& platforms, 
-                          SDL_Texture* texBullet, SDL_Texture* texP1, SDL_Texture* texP2, SDL_Texture* texBG) 
+                          SDL_Texture* texBullet, SDL_Texture* texP1, SDL_Texture* texP2, 
+                          SDL_Texture* texBG, 
+                          SDL_Texture* texW1, SDL_Texture* texW2) 
 {
     if (texBG) {
         SDL_RenderTexture(renderer, texBG, NULL, NULL); 
@@ -14,16 +16,17 @@ void RenderSystem::render(SDL_Renderer* renderer,
         SDL_SetRenderDrawColor(renderer, 20, 20, 30, 255);
         SDL_RenderClear(renderer);
     }
+
     // Platforms
-    for (const auto& plat : platforms) {
-        SDL_FRect rect = plat.getRect();
-        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 180); 
-        SDL_RenderFillRect(renderer, &rect);
-    }
+    // for (const auto& plat : platforms) {
+    //     SDL_FRect rect = plat.getRect();
+    //     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 180); 
+    //     SDL_RenderFillRect(renderer, &rect);
+    // }
 
     // Players
-    renderPlayer(renderer, p1, texP1, texP2);
-    renderPlayer(renderer, p2, texP1, texP2);
+    renderPlayer(renderer, p1, texP1, texP2, texW1, texW2);
+    renderPlayer(renderer, p2, texP1, texP2, texW1, texW2);
 
     // Projectiles
     for (const auto& p : bullets) {
@@ -47,7 +50,7 @@ void RenderSystem::render(SDL_Renderer* renderer,
     }
 }
 
-void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SDL_Texture* texP1, SDL_Texture* texP2) {
+void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SDL_Texture* texP1, SDL_Texture* texP2, SDL_Texture* texW1, SDL_Texture* texW2) {
     if (player.hp <= 0) return;
 
     SDL_FRect rect = player.getRect();
@@ -73,12 +76,32 @@ void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SD
     // Mana
     renderSideManaBar(renderer, player);
 
-    // Aim Line
-    float cx = player.position.x + player.width / 2;
-    float cy = player.position.y + player.height / 2;
-    float rad = player.aimAngle * (PI / 180.0f);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150);
-    SDL_RenderLine(renderer, cx, cy, cx + std::cos(rad)*60, cy + std::sin(rad)*60);
+    // Weapon
+    SDL_Texture* currentWeaponTex = (player.id == 1) ? texW1 : texW2;
+    if (currentWeaponTex) {
+        float wWidth, wHeight;
+        SDL_GetTextureSize(currentWeaponTex, &wWidth, &wHeight);
+
+        float renderWidth = wWidth / 3.0f;
+        float renderHeight = wHeight / 3.0f;
+
+        float cx = player.position.x + player.width / 2;
+        float cy = player.position.y + player.height / 2;
+
+        SDL_FRect weaponRect = { cx, cy - renderHeight / 2, renderWidth, renderHeight };
+        SDL_FPoint center = { 0.0f, renderHeight / 2 };
+
+        SDL_FlipMode weaponFlip = SDL_FLIP_NONE;
+        
+        float rotationOffset = 90.0f; 
+        float renderAngle = player.aimAngle + rotationOffset;
+
+        if (player.aimAngle > 90 && player.aimAngle < 270) {
+            weaponFlip = SDL_FLIP_VERTICAL;
+        }
+
+        SDL_RenderTextureRotated(renderer, currentWeaponTex, NULL, &weaponRect, renderAngle, &center, weaponFlip);
+    }
 }
 
 void RenderSystem::renderSideManaBar(SDL_Renderer* renderer, const Player& player) {
@@ -133,8 +156,8 @@ void RenderSystem::renderGameOver(SDL_Renderer* renderer, const Player& p1, cons
     float boxW = 300.0f, boxH = 100.0f;
     SDL_FRect winBox = { (SCREEN_WIDTH - boxW) / 2, (SCREEN_HEIGHT - boxH) / 2, boxW, boxH };
 
-    if (p1.hp <= 0) SDL_SetRenderDrawColor(renderer, 50, 50, 255, 255); // P2 Win màu xanh
-    else SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255); // P1 Win màu đỏ
+    if (p1.hp <= 0) SDL_SetRenderDrawColor(renderer, 50, 50, 255, 255); 
+    else SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255); 
     
     SDL_RenderFillRect(renderer, &winBox);
 }

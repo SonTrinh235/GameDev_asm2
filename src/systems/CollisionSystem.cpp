@@ -7,11 +7,11 @@ void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets, c
     player.isGrounded = false;
     if (player.position.x < 0) player.position.x = 0;
     if (player.position.x > SCREEN_WIDTH - player.width) player.position.x = SCREEN_WIDTH - player.width;
-    if (player.position.y > SCREEN_HEIGHT - player.height) {
-        player.position.y = SCREEN_HEIGHT - player.height;
-        player.velocity.y = 0;
-        player.isGrounded = true;
-    }
+    // if (player.position.y > SCREEN_HEIGHT - player.height) {
+    //     player.position.y = SCREEN_HEIGHT - player.height;
+    //     player.velocity.y = 0;
+    //     player.isGrounded = true;
+    // }
 
     for (const auto& plat : platforms) {
         bool collisionX = (player.position.x + player.width > plat.x) && (player.position.x < plat.x + plat.width);

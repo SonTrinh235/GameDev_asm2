@@ -15,10 +15,12 @@ public:
                 SDL_Texture* texBullet,
                 SDL_Texture* texP1,
                 SDL_Texture* texP2,
-                SDL_Texture* texBG);
+                SDL_Texture* texBG,
+                SDL_Texture* texW1, 
+                SDL_Texture* texW2);
 
 private:
-    void renderPlayer(SDL_Renderer* renderer, const Player& player, SDL_Texture* texP1, SDL_Texture* texP2);
+    void renderPlayer(SDL_Renderer* renderer, const Player& player, SDL_Texture* texP1, SDL_Texture* texP2, SDL_Texture* texW1, SDL_Texture* texW2);
     void renderSideManaBar(SDL_Renderer* renderer, const Player& player);
     void renderUI(SDL_Renderer* renderer, const Player& p1, const Player& p2);
     void renderGameOver(SDL_Renderer* renderer, const Player& p1, const Player& p2);
