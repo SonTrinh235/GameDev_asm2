@@ -5,6 +5,8 @@
 #include "../../include/systems/PhysicsSystem.h"
 #include "../../include/systems/CollisionSystem.h"
 #include "../../include/systems/RenderSystem.h"
+#include "../../include/managers/ResourceManager.h"
+#include "../../include/managers/GameManager.h"
 #include <iostream>
 #include <algorithm>
 #include <cstdlib>
@@ -33,74 +35,33 @@ bool Game::init(const char* title, int width, int height) {
 
     SDL_Renderer* renderer = gameWindow->getRenderer();
 
-    // Background
-    SDL_Surface* surfBG = SDL_LoadBMP("assets/textures/background1.bmp");
-    if (surfBG) {
-        texBackground = SDL_CreateTextureFromSurface(renderer, surfBG);
-        SDL_DestroySurface(surfBG);
-    }
+    ResourceManager::getInstance().loadTexture(renderer, "bg", "assets/textures/background1.bmp");
+    texBackground = ResourceManager::getInstance().getTexture("bg");
 
-    // Load Bullet
-    SDL_Surface* surfBullet = SDL_LoadBMP("assets/textures/projectile.bmp");
-    if (surfBullet) {
-        SDL_SetSurfaceColorKey(surfBullet, true, SDL_MapSurfaceRGB(surfBullet, 0, 0, 0));
-        texProjectile = SDL_CreateTextureFromSurface(renderer, surfBullet);
-        SDL_DestroySurface(surfBullet);
-    }
+    ResourceManager::getInstance().loadTexture(renderer, "bullet", "assets/textures/projectile.bmp");
+    texProjectile = ResourceManager::getInstance().getTexture("bullet");
 
-    // Load Players
-    SDL_Surface* surfP1 = SDL_LoadBMP("assets/textures/player1.bmp");
-    if (surfP1) {
-        SDL_SetSurfaceColorKey(surfP1, true, SDL_MapSurfaceRGB(surfP1, 0, 0, 0));
-        texPlayer1 = SDL_CreateTextureFromSurface(renderer, surfP1);
-        SDL_DestroySurface(surfP1);
-    }
+    ResourceManager::getInstance().loadTexture(renderer, "p1", "assets/textures/player1.bmp");
+    texPlayer1 = ResourceManager::getInstance().getTexture("p1");
 
-    SDL_Surface* surfP2 = SDL_LoadBMP("assets/textures/player2.bmp");
-    if (surfP2) {
-        SDL_SetSurfaceColorKey(surfP2, true, SDL_MapSurfaceRGB(surfP2, 0, 0, 0));
-        texPlayer2 = SDL_CreateTextureFromSurface(renderer, surfP2);
-        SDL_DestroySurface(surfP2);
-    }
+    ResourceManager::getInstance().loadTexture(renderer, "p2", "assets/textures/player2.bmp");
+    texPlayer2 = ResourceManager::getInstance().getTexture("p2");
 
-    // Load Weapons
-    SDL_Surface* surfW1 = SDL_LoadBMP("assets/textures/weapon1.bmp");
-    if (surfW1) {
-        SDL_SetSurfaceColorKey(surfW1, true, SDL_MapSurfaceRGB(surfW1, 0, 0, 0));
-        texWeapon1 = SDL_CreateTextureFromSurface(renderer, surfW1);
-        SDL_DestroySurface(surfW1);
-    }
+    ResourceManager::getInstance().loadTexture(renderer, "w1", "assets/textures/weapon1.bmp");
+    texWeapon1 = ResourceManager::getInstance().getTexture("w1");
 
-    SDL_Surface* surfW2 = SDL_LoadBMP("assets/textures/weapon2.bmp");
-    if (surfW2) {
-        SDL_SetSurfaceColorKey(surfW2, true, SDL_MapSurfaceRGB(surfW2, 0, 0, 0));
-        texWeapon2 = SDL_CreateTextureFromSurface(renderer, surfW2);
-        SDL_DestroySurface(surfW2);
-    }
+    ResourceManager::getInstance().loadTexture(renderer, "w2", "assets/textures/weapon2.bmp");
+    texWeapon2 = ResourceManager::getInstance().getTexture("w2");
 
-    SDL_Surface* surfHeal = SDL_LoadBMP("assets/textures/health.bmp");
-    if (surfHeal) {
-        SDL_SetSurfaceColorKey(surfHeal, true, SDL_MapSurfaceRGB(surfHeal, 0, 0, 0));
-        texItemHealth = SDL_CreateTextureFromSurface(renderer, surfHeal);
-        SDL_DestroySurface(surfHeal);
-    }
+    ResourceManager::getInstance().loadTexture(renderer, "health", "assets/textures/health.bmp");
+    texItemHealth = ResourceManager::getInstance().getTexture("health");
 
-    SDL_Surface* surfMana = SDL_LoadBMP("assets/textures/power.bmp");
-    if (surfMana) {
-        SDL_SetSurfaceColorKey(surfMana, true, SDL_MapSurfaceRGB(surfMana, 0, 0, 0));
-        texItemMana = SDL_CreateTextureFromSurface(renderer, surfMana);
-        SDL_DestroySurface(surfMana);
-    }
+    ResourceManager::getInstance().loadTexture(renderer, "mana", "assets/textures/power.bmp");
+    texItemMana = ResourceManager::getInstance().getTexture("mana");
 
-    SDL_Surface* surfShield = SDL_LoadBMP("assets/textures/shield.bmp");
-    if (surfShield) {
-        SDL_SetSurfaceColorKey(surfShield, true, SDL_MapSurfaceRGB(surfShield, 0, 0, 0));
-        texItemShield = SDL_CreateTextureFromSurface(renderer, surfShield);
-        SDL_DestroySurface(surfShield);
-    }
+    ResourceManager::getInstance().loadTexture(renderer, "shield", "assets/textures/shield.bmp");
+    texItemShield = ResourceManager::getInstance().getTexture("shield");
 
-    // Platforms
-    // Below 1
     platforms.push_back({186, 600, 54, 15});
     platforms.push_back({230, 596, 54, 15});
     platforms.push_back({274, 591, 54, 15});
@@ -112,7 +73,6 @@ bool Game::init(const char* title, int width, int height) {
     platforms.push_back({538, 564, 54, 15});
     platforms.push_back({582, 560, 44, 15});
 
-    //Below 2
     platforms.push_back({790, 560, 54, 15});
     platforms.push_back({834, 564, 54, 15});
     platforms.push_back({878, 569, 54, 15});
@@ -124,11 +84,8 @@ bool Game::init(const char* title, int width, int height) {
     platforms.push_back({1142, 596, 54, 15});
     platforms.push_back({1186, 600, 44, 15});
 
-    // Middle
-    platforms.push_back({200, 430, 350, 20});  // Left 
-    platforms.push_back({900, 410, 280, 20});  // Right
-    // platforms.push_back({300, 200, 200, 20});  // Center
-
+    platforms.push_back({200, 430, 350, 20}); 
+    platforms.push_back({900, 410, 280, 20}); 
 
     float windWidth = 160.0f;
     float windHeight = 600.0f;
@@ -139,6 +96,8 @@ bool Game::init(const char* title, int width, int height) {
 
     player1 = new Player(1, 332, 100); 
     player2 = new Player(2, 1016, 100);
+
+    GameManager::getInstance().setGameState(GameState::PLAYING);
 
     srand((unsigned int)time(NULL));
     isRunning = true;
@@ -152,12 +111,29 @@ void Game::handleEvents(SDL_Event* event) {
 void Game::update(float deltaTime) {
     if (!player1 || !player2) return;
     
-    if (player1->hp <= 0 || player2->hp <= 0) {
-        return;
-    }
-
     int numKeys;
     const bool* keys = SDL_GetKeyboardState(&numKeys);
+
+    if (GameManager::getInstance().getGameState() == GameState::GAME_OVER) {
+        if (keys[SDL_SCANCODE_R]) {
+            player1->hp = player1->maxHp;
+            player2->hp = player2->maxHp;
+            player1->mana = player1->maxMana;
+            player2->mana = player2->maxMana;
+            
+            player1->position.x = 332; player1->position.y = 100;
+            player2->position.x = 1016; player2->position.y = 100;
+            player1->velocity.x = 0; player1->velocity.y = 0;
+            player2->velocity.x = 0; player2->velocity.y = 0;
+            
+            bullets.clear();
+            items.clear();
+            itemSpawnTimer = 0.0f;
+            
+            GameManager::getInstance().resetGame();
+        }
+        return; 
+    }
 
     bullets.erase(std::remove_if(bullets.begin(), bullets.end(), 
         [](const Projectile& p) { return !p.active; }), bullets.end());
@@ -215,6 +191,10 @@ void Game::update(float deltaTime) {
         player2->hp = 0;
     }
 
+    if (player1->hp <= 0 || player2->hp <= 0) {
+        GameManager::getInstance().setGameState(GameState::GAME_OVER);
+    }
+
     float rotSpeed = 360.0f / ROT_TIME;
     player1->aimAngle += rotSpeed * deltaTime;
     player2->aimAngle += rotSpeed * deltaTime;
@@ -231,7 +211,7 @@ void Game::render() {
                          texWeapon1, texWeapon2,
                          texItemHealth, texItemMana, texItemShield);
 
-        if (player1->hp <= 0 || player2->hp <= 0) {
+        if (GameManager::getInstance().getGameState() == GameState::GAME_OVER) {
              SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
              SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
              SDL_FRect overlay = {0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT};
@@ -243,16 +223,7 @@ void Game::render() {
 }
 
 void Game::clean() {
-    if (texBackground) SDL_DestroyTexture(texBackground);
-    if (texWeapon1) SDL_DestroyTexture(texWeapon1);
-    if (texWeapon2) SDL_DestroyTexture(texWeapon2);
-    if (texProjectile) SDL_DestroyTexture(texProjectile);
-    if (texPlayer1) SDL_DestroyTexture(texPlayer1);
-    if (texPlayer2) SDL_DestroyTexture(texPlayer2);
-    
-    if (texItemHealth) SDL_DestroyTexture(texItemHealth);
-    if (texItemMana) SDL_DestroyTexture(texItemMana);
-    if (texItemShield) SDL_DestroyTexture(texItemShield);
+    ResourceManager::getInstance().clean();
 
     if (player1) delete player1;
     if (player2) delete player2;

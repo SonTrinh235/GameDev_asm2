@@ -1,5 +1,7 @@
 #include "../../include/systems/RenderSystem.h"
 #include "../../include/utils/Constants.h"
+#include "../../include/managers/ResourceManager.h"
+#include <SDL3/SDL_ttf.h>
 #include <cmath>
 
 void RenderSystem::drawFilledCircle(SDL_Renderer* renderer, float cx, float cy, float radius, SDL_Color color) {
@@ -246,17 +248,60 @@ void RenderSystem::renderUI(SDL_Renderer* renderer, const Player& p1, const Play
     SDL_RenderFillRect(renderer, &hp2);
 }
 
+
+
 void RenderSystem::renderGameOver(SDL_Renderer* renderer, const Player& p1, const Player& p2) {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 210); 
     SDL_FRect overlay = { 0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT };
     SDL_RenderFillRect(renderer, &overlay);
 
-    float boxW = 300.0f, boxH = 100.0f;
-    SDL_FRect winBox = { (SCREEN_WIDTH - boxW) / 2, (SCREEN_HEIGHT - boxH) / 2, boxW, boxH };
-
-    if (p1.hp <= 0) SDL_SetRenderDrawColor(renderer, 50, 50, 255, 255); 
-    else SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255); 
+    TTF_Font* font = TTF_OpenFont("assets/fonts/LibreBaskerville-Italic-VariableFont_wght.ttf", 90);
     
-    SDL_RenderFillRect(renderer, &winBox);
+    if (font) {
+        std::string winnerText = (p1.hp <= 0) ? "PLAYER 2 WINS!" : "PLAYER 1 WINS!";
+        
+        SDL_Color mainColor = (p1.hp <= 0) ? SDL_Color{255, 100, 100, 255} : SDL_Color{100, 200, 255, 255};
+        SDL_Color shadowColor = { 50, 50, 50, 255 };
+
+        SDL_Surface* surf = TTF_RenderText_Blended(font, winnerText.c_str(), 0, mainColor);
+        if (surf) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+            float w = (float)surf->w;
+            float h = (float)surf->h;
+            
+            SDL_FRect shadowDst = { (SCREEN_WIDTH - w) / 2.0f + 4, (SCREEN_HEIGHT - h) / 2.0f - 36, w, h };
+            SDL_SetTextureColorMod(tex, 0, 0, 0);
+            SDL_SetTextureAlphaMod(tex, 150);
+            SDL_RenderTexture(renderer, tex, NULL, &shadowDst);
+
+            SDL_FRect dst = { (SCREEN_WIDTH - w) / 2.0f, (SCREEN_HEIGHT - h) / 2.0f - 40, w, h };
+            SDL_SetTextureColorMod(tex, 255, 255, 255);
+            SDL_SetTextureAlphaMod(tex, 255);
+            SDL_RenderTexture(renderer, tex, NULL, &dst);
+            
+            SDL_DestroySurface(surf);
+            SDL_DestroyTexture(tex);
+        }
+
+        TTF_CloseFont(font);
+        font = TTF_OpenFont("assets/fonts/LibreBaskerville-Italic-VariableFont_wght.ttf", 35);
+        SDL_Surface* subSurf = TTF_RenderText_Blended(font, "Press 'R' to Rematch", 0, {255, 255, 255, 255});
+        if (subSurf) {
+            SDL_Texture* subTex = SDL_CreateTextureFromSurface(renderer, subSurf);
+            float sw = (float)subSurf->w;
+            float sh = (float)subSurf->h;
+            SDL_FRect subDst = { (SCREEN_WIDTH - sw) / 2.0f, (SCREEN_HEIGHT / 2.0f) + 70, sw, sh };
+            Uint8 alpha = (Uint8)(180 + 75 * sin(SDL_GetTicks() / 200.0f)); 
+            SDL_SetTextureAlphaMod(subTex, alpha);
+            
+            SDL_RenderTexture(renderer, subTex, NULL, &subDst);
+            
+            SDL_DestroySurface(subSurf);
+            SDL_DestroyTexture(subTex);
+        }
+        TTF_CloseFont(font);
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 }

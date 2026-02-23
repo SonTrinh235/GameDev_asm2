@@ -5,7 +5,7 @@ CXXFLAGS = -O2 -std=c++17
 
 INCLUDE_DIR = -I SDL/x86_64-w64-mingw32/include
 LIB_DIR = -L SDL/x86_64-w64-mingw32/lib
-LIBS = -lSDL3
+LIBS = -lSDL3 -lSDL3_ttf
 
 SRCS = src/main.cpp \
        src/core/Game.cpp \
@@ -19,6 +19,8 @@ SRCS = src/main.cpp \
        src/systems/CollisionSystem.cpp \
        src/systems/PhysicsSystem.cpp \
        src/entities/WindColumn.cpp \
+       src/managers/GameManager.cpp \
+       src/managers/ResourceManager.cpp \
 
 
 all:
