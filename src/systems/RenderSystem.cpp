@@ -2,13 +2,40 @@
 #include "../../include/utils/Constants.h"
 #include <cmath>
 
+void RenderSystem::drawFilledCircle(SDL_Renderer* renderer, float cx, float cy, float radius, SDL_Color color) {
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    
+    int x = (int)radius;
+    int y = 0;
+    int err = 0;
+
+    while (x >= y) {
+        SDL_RenderLine(renderer, cx - x, cy - y, cx + x, cy - y);
+        SDL_RenderLine(renderer, cx - x, cy + y, cx + x, cy + y);
+        SDL_RenderLine(renderer, cx - y, cy - x, cx + y, cy - x);
+        SDL_RenderLine(renderer, cx - y, cy + x, cx + y, cy + x);
+
+        if (err <= 0) {
+            y += 1;
+            err += 2 * y + 1;
+        }
+        if (err > 0) {
+            x -= 1;
+            err -= 2 * x + 1;
+        }
+    }
+}
+
 void RenderSystem::render(SDL_Renderer* renderer, 
                           const Player& p1, const Player& p2,
                           const std::vector<Projectile>& bullets, 
                           const std::vector<Platform>& platforms, 
+                          const std::vector<Item>& items,
+                          const std::vector<WindColumn>& winds,
                           SDL_Texture* texBullet, SDL_Texture* texP1, SDL_Texture* texP2, 
                           SDL_Texture* texBG, 
-                          SDL_Texture* texW1, SDL_Texture* texW2) 
+                          SDL_Texture* texW1, SDL_Texture* texW2,
+                          SDL_Texture* texItemHealth, SDL_Texture* texItemMana, SDL_Texture* texItemShield) // Nhận thêm 3 texture
 {
     if (texBG) {
         SDL_RenderTexture(renderer, texBG, NULL, NULL); 
@@ -18,12 +45,71 @@ void RenderSystem::render(SDL_Renderer* renderer,
     }
 
     // Platforms
-    // for (const auto& plat : platforms) {
-    //     SDL_FRect rect = plat.getRect();
-    //     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 180); 
-    //     SDL_RenderFillRect(renderer, &rect);
-    // }
+    for (const auto& plat : platforms) {
+        SDL_FRect rect = plat.getRect();
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 180); 
+        SDL_RenderFillRect(renderer, &rect);
+    }
+    
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    Uint64 ticks = SDL_GetTicks(); 
 
+    for (const auto& wind : winds) {
+        SDL_FRect rect = wind.getRect();
+
+        SDL_SetRenderDrawColor(renderer, 150, 255, 255, 40);
+        SDL_RenderFillRect(renderer, &rect);
+
+        SDL_SetRenderDrawColor(renderer, 200, 255, 255, 150); 
+        
+        int numStreaks = 6; 
+        float streakWidth = 4.0f; 
+        float streakHeight = 30.0f; 
+
+        for (int i = 0; i < numStreaks; ++i) {
+            float streakX = rect.x + (i * (rect.w / numStreaks)) + 10.0f;
+            float offset = fmod((ticks * 0.3f + i * 100.0f), rect.h);
+            float streakY = rect.y + rect.h - offset;
+
+            SDL_FRect streak = { streakX, streakY, streakWidth, streakHeight };
+            SDL_RenderFillRect(renderer, &streak);
+        }
+    }
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+    for (const auto& item : items) {
+        if (!item.active) continue;
+        SDL_FRect rect = item.getRect();
+        
+        float cx = rect.x + rect.w / 2.0f;
+        float cy = rect.y + rect.h / 2.0f;
+        float radius = rect.w / 2.0f + 5.0f;
+
+        SDL_Texture* iconTex = nullptr;
+        SDL_Color frameColor = {255, 255, 255, 255};
+
+        if (item.type == ITEM_HEAL) {
+            frameColor = {50, 255, 50, 255};
+            iconTex = texItemHealth;
+        } else if (item.type == ITEM_SHIELD) {
+            frameColor = {50, 255, 255, 255};
+            iconTex = texItemShield;
+        } else if (item.type == ITEM_INFINITE_MANA) {
+            frameColor = {255, 200, 50, 255};
+            iconTex = texItemMana;
+        }
+
+        drawFilledCircle(renderer, cx, cy, radius, frameColor);
+
+        drawFilledCircle(renderer, cx, cy, radius - 2.0f, {255, 255, 255, 255});
+
+        if (iconTex) {
+            SDL_RenderTexture(renderer, iconTex, NULL, &rect);
+        } else {
+            SDL_SetRenderDrawColor(renderer, frameColor.r, frameColor.g, frameColor.b, frameColor.a);
+            SDL_RenderFillRect(renderer, &rect);
+        }
+    }
     // Players
     renderPlayer(renderer, p1, texP1, texP2, texW1, texW2);
     renderPlayer(renderer, p2, texP1, texP2, texW1, texW2);
@@ -41,10 +127,10 @@ void RenderSystem::render(SDL_Renderer* renderer,
         }
     }
 
-    //HUD
+    // HUD
     renderUI(renderer, p1, p2);
 
-    //Game Over
+    // Game Over
     if (p1.hp <= 0 || p2.hp <= 0) {
         renderGameOver(renderer, p1, p2);
     }
@@ -54,6 +140,14 @@ void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SD
     if (player.hp <= 0) return;
 
     SDL_FRect rect = player.getRect();
+
+    if (player.shieldTimer > 0) {
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 50, 255, 255, 120); 
+        SDL_FRect sRect = {rect.x - 10, rect.y - 10, rect.w + 20, rect.h + 20};
+        SDL_RenderFillRect(renderer, &sRect);
+    }
+
     SDL_Texture* currentTex = (player.id == 1) ? texP1 : texP2;
 
     if (currentTex != nullptr) {
@@ -63,7 +157,12 @@ void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SD
         if (player.isCharging) {
             float ratio = player.currentChargeTime / MAX_CHARGE_TIME;
             Uint8 boost = (Uint8)(ratio * 150);
-            SDL_SetTextureColorMod(currentTex, 255, 255 - boost, 255 - boost); 
+            
+            if (player.id == 1) {
+                SDL_SetTextureColorMod(currentTex, 255 - boost, 255, 255); 
+            } else {
+                SDL_SetTextureColorMod(currentTex, 255, 255 - boost, 255 - boost); 
+            }
         } else {
             SDL_SetTextureColorMod(currentTex, 255, 255, 255);
         }

@@ -1,7 +1,7 @@
 #include "../../include/systems/CollisionSystem.h"
 #include "../../include/utils/Constants.h"
 
-void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets, const std::vector<Platform>& platforms) {
+void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets, const std::vector<Platform>& platforms, std::vector<Item>& items) {
     if (player.hp <= 0) return;
 
     player.isGrounded = false;
@@ -24,17 +24,38 @@ void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets, c
         }
     }
 
+    SDL_FRect playerRect = player.getRect();
+    for (auto& item : items) {
+        if (!item.active) continue;
+        
+        SDL_FRect itemRect = item.getRect();
+        if (SDL_HasRectIntersectionFloat(&playerRect, &itemRect)) {
+            item.active = false;
+            
+            if (item.type == ITEM_HEAL) {
+                player.hp += 30.0f;
+                if (player.hp > player.maxHp) player.hp = player.maxHp;
+            } 
+            else if (item.type == ITEM_SHIELD) {
+                player.shieldTimer = 5.0f;
+            }
+            else if (item.type == ITEM_INFINITE_MANA) {
+                player.infiniteManaTimer = 7.0f;
+            }
+        }
+    }
+
     for (auto& p : bullets) {
         if (!p.active) continue;
         if (p.existTime < 0.05f) continue;
 
         SDL_FRect bulletRect = p.getRect();
-        SDL_FRect playerRect = player.getRect();
-
         if (SDL_HasRectIntersectionFloat(&bulletRect, &playerRect)) {
             if (p.ownerId != player.id) {
-                player.hp -= p.damage;
-                if (player.hp < 0) player.hp = 0;
+                if (player.shieldTimer <= 0.0f) {
+                    player.hp -= p.damage;
+                    if (player.hp < 0) player.hp = 0;
+                }
                 p.active = false;
                 continue; 
             }

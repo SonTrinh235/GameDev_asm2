@@ -11,7 +11,8 @@ Player::Player(int playerId, float startX, float startY)
       shootCooldown(0),
       currentChargeTime(0.0f), isCharging(false),
       aimAngle(0.0f),
-      hp(100.0f), maxHp(100.0f)
+      hp(100.0f), maxHp(100.0f),
+      shieldTimer(0.0f), infiniteManaTimer(0.0f)
 {
     if (id == 1) { 
         r = 255; g = 50; b = 50; aimAngle = 0.0f; 

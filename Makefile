@@ -13,9 +13,13 @@ SRCS = src/main.cpp \
        src/entities/Player.cpp \
        src/entities/Projectile.cpp \
        src/entities/Platform.cpp \
+       src/entities/Item.cpp \
        src/systems/AmmoSystem.cpp \
        src/systems/RenderSystem.cpp \
-       src/systems/CollisionSystem.cpp
+       src/systems/CollisionSystem.cpp \
+       src/systems/PhysicsSystem.cpp \
+       src/entities/WindColumn.cpp \
+
 
 all:
 	$(CXX) $(SRCS) $(CXXFLAGS) $(INCLUDE_DIR) $(LIB_DIR) $(LIBS) -o $(TARGET)

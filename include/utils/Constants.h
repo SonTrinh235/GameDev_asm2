@@ -1,7 +1,7 @@
 #pragma once
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
+const int SCREEN_WIDTH = 1344;
+const int SCREEN_HEIGHT = 712;
 
 // player
 const float GRAVITY = 2000.0f;
@@ -19,8 +19,8 @@ const float MIN_BULLET_RADIUS = 8.0f;
 const float MAX_BULLET_RADIUS = 25.0f;
 
 const float MAX_MANA = 100.0f; 
-const float MANA_REGEN = 15.0f; 
-const float MANA_COST = 20.0f;
+const float MANA_REGEN = 10.0f; 
+const float MANA_COST = 30.0f;
 
 // Aiming
 const float ROT_TIME = 2.0f;
