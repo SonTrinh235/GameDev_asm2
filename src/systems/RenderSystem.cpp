@@ -137,6 +137,15 @@ void RenderSystem::renderExplosions(SDL_Renderer* renderer, const std::vector<Ex
 
 void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SDL_Texture* texP1, SDL_Texture* texP2, SDL_Texture* texW1, SDL_Texture* texW2) {
     if (player.hp <= 0) return;
+
+    if (player.hitTimer > 0) {
+        Uint64 ticks = SDL_GetTicks();
+        if ((ticks / 50) % 2 == 0) {
+            renderSideManaBar(renderer, player);
+            return; 
+        }
+    }
+
     SDL_FRect rect = player.getRect();
     float cx = rect.x + rect.w / 2.0f;
     float cy = rect.y + rect.h / 2.0f;
@@ -166,8 +175,9 @@ void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SD
     SDL_Texture* currentTex = (player.id == 1) ? texP1 : texP2;
     if (currentTex) {
         SDL_FlipMode flip = (player.aimAngle > 90 && player.aimAngle < 270) ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-        if (player.hitTimer > 0) SDL_SetTextureColorMod(currentTex, 255, 100, 100);
+        if (player.hitTimer > 0) SDL_SetTextureColorMod(currentTex, 255, 150, 150);
         else SDL_SetTextureColorMod(currentTex, 255, 255, 255);
+        
         SDL_RenderTextureRotated(renderer, currentTex, NULL, &rect, 0, NULL, flip);
     }
 
@@ -182,8 +192,10 @@ void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SD
         SDL_FPoint center = { 0.0f, rH / 2 };
         float renderAngle = player.aimAngle + 90.0f;
         SDL_FlipMode wFlip = (player.aimAngle > 90 && player.aimAngle < 270) ? SDL_FLIP_VERTICAL : SDL_FLIP_NONE;
-        if (player.hitTimer > 0) SDL_SetTextureColorMod(currentWeaponTex, 255, 100, 100);
+        
+        if (player.hitTimer > 0) SDL_SetTextureColorMod(currentWeaponTex, 255, 150, 150);
         else SDL_SetTextureColorMod(currentWeaponTex, 255, 255, 255);
+        
         SDL_RenderTextureRotated(renderer, currentWeaponTex, NULL, &weaponRect, renderAngle, &center, wFlip);
     }
 }
