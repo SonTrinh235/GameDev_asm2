@@ -146,13 +146,11 @@ void Game::handleEvents(SDL_Event* event) {
 void Game::update(float deltaTime) {
     if (!player1 || !player2) return;
     
-    // --- LOGIC LẶP NHẠC NỀN ---
     if (bgmStream && bgmAudioData) {
         if (SDL_GetAudioStreamAvailable(bgmStream) < (int)(bgmAudioLen / 2)) {
             SDL_PutAudioStreamData(bgmStream, bgmAudioData, bgmAudioLen);
         }
     }
-    // --------------------------
 
     int numKeys;
     const bool* keys = SDL_GetKeyboardState(&numKeys);
@@ -262,7 +260,6 @@ void Game::render() {
 }
 
 void Game::clean() {
-    // --- DỌN DẸP ÂM THANH SDL3 ---
     if (bgmStream) {
         SDL_DestroyAudioStream(bgmStream);
         bgmStream = nullptr;
@@ -272,7 +269,6 @@ void Game::clean() {
         bgmAudioData = nullptr;
     }
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
-    // ------------------------------
 
     ResourceManager::getInstance().clean();
     if (player1) delete player1;
