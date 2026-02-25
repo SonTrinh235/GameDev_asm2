@@ -7,6 +7,7 @@
 #include "../entities/Projectile.h"
 #include "../entities/Item.h"
 #include "../entities/WindColumn.h"
+#include "../entities/Explosion.h" 
 
 class Game {
 public:
@@ -31,7 +32,10 @@ private:
     std::vector<Projectile> bullets;
     std::vector<Item> items;
     std::vector<WindColumn> winds;
+    std::vector<Explosion> explosions;
+
     float itemSpawnTimer;
+    
     SDL_Texture* texProjectile; 
     SDL_Texture* texPlayer1;
     SDL_Texture* texPlayer2;
@@ -41,4 +45,5 @@ private:
     SDL_Texture* texItemHealth;
     SDL_Texture* texItemMana;
     SDL_Texture* texItemShield;
+    SDL_Texture* texBlast; 
 };

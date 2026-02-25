@@ -18,6 +18,8 @@ struct Player {
     float currentChargeTime; 
     bool isCharging;
 
+    float hitTimer;
+    bool useUltimate;
     float aimAngle;
     Uint8 r, g, b;
 

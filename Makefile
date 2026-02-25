@@ -21,6 +21,7 @@ SRCS = src/main.cpp \
        src/entities/WindColumn.cpp \
        src/managers/GameManager.cpp \
        src/managers/ResourceManager.cpp \
+       src/systems/InputSystem.cpp \
 
 
 all:

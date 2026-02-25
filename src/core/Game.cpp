@@ -19,13 +19,14 @@ CollisionSystem collisionSys;
 RenderSystem renderSys;
 
 Game::Game() : gameWindow(nullptr), isRunning(false), 
-               player1(nullptr), player2(nullptr), 
-               texProjectile(nullptr), 
-               texPlayer1(nullptr), texPlayer2(nullptr),
-               texWeapon1(nullptr), texWeapon2(nullptr),
-               texBackground(nullptr), 
-               texItemHealth(nullptr), texItemMana(nullptr), texItemShield(nullptr),
-               itemSpawnTimer(0.0f) {}
+                player1(nullptr), player2(nullptr), 
+                texProjectile(nullptr), 
+                texPlayer1(nullptr), texPlayer2(nullptr),
+                texWeapon1(nullptr), texWeapon2(nullptr),
+                texBackground(nullptr), 
+                texItemHealth(nullptr), texItemMana(nullptr), texItemShield(nullptr),
+                texBlast(nullptr), // Khởi tạo texture mới
+                itemSpawnTimer(0.0f) {}
 
 Game::~Game() { clean(); }
 
@@ -35,6 +36,7 @@ bool Game::init(const char* title, int width, int height) {
 
     SDL_Renderer* renderer = gameWindow->getRenderer();
 
+    // Load các texture cơ bản
     ResourceManager::getInstance().loadTexture(renderer, "bg", "assets/textures/background1.bmp");
     texBackground = ResourceManager::getInstance().getTexture("bg");
 
@@ -62,6 +64,23 @@ bool Game::init(const char* title, int width, int height) {
     ResourceManager::getInstance().loadTexture(renderer, "shield", "assets/textures/shield.bmp");
     texItemShield = ResourceManager::getInstance().getTexture("shield");
 
+    // Load Blast.bmp cho hiệu ứng nổ
+    ResourceManager::getInstance().loadTexture(renderer, "blast", "assets/textures/Blast.bmp");
+    texBlast = ResourceManager::getInstance().getTexture("blast");
+
+    // Player 1 textures
+    ResourceManager::getInstance().loadTexture(renderer, "Dark_1", "assets/textures/Dark_1.bmp");
+    ResourceManager::getInstance().loadTexture(renderer, "Dark_2", "assets/textures/Dark_2.bmp");
+    ResourceManager::getInstance().loadTexture(renderer, "Dark_3", "assets/textures/Dark_3.bmp");
+    ResourceManager::getInstance().loadTexture(renderer, "Ultimate_P1", "assets/textures/Brimstone_Gigablast.bmp");
+    
+    // Player 2 textures
+    ResourceManager::getInstance().loadTexture(renderer, "Nebula_1", "assets/textures/Nebula_1.bmp");
+    ResourceManager::getInstance().loadTexture(renderer, "Nebula_2", "assets/textures/Nebula_2.bmp");
+    ResourceManager::getInstance().loadTexture(renderer, "Nebula_3", "assets/textures/Nebula_3.bmp");
+    ResourceManager::getInstance().loadTexture(renderer, "Ultimate_P2", "assets/textures/Death_Fire.bmp");
+
+    // Platforms
     platforms.push_back({186, 600, 54, 15});
     platforms.push_back({230, 596, 54, 15});
     platforms.push_back({274, 591, 54, 15});
@@ -128,6 +147,7 @@ void Game::update(float deltaTime) {
             
             bullets.clear();
             items.clear();
+            explosions.clear(); // Xóa sạch vụ nổ khi reset
             itemSpawnTimer = 0.0f;
             
             GameManager::getInstance().resetGame();
@@ -153,18 +173,13 @@ void Game::update(float deltaTime) {
     itemSpawnTimer += deltaTime;
     if (itemSpawnTimer >= 8.0f && !platforms.empty()) { 
         itemSpawnTimer = 0.0f;
-        
         int platIndex = rand() % platforms.size(); 
         SDL_FRect platRect = platforms[platIndex].getRect();
-        
         int minX = (int)platRect.x + 20;
         int maxX = (int)(platRect.x + platRect.w - 40);
-        
         if (maxX <= minX) maxX = minX + 1; 
-
         float spawnX = minX + (rand() % (maxX - minX));
         float spawnY = platRect.y - 30.0f; 
-
         ItemType type = (ItemType)(rand() % 3);
         items.push_back(Item(spawnX, spawnY, type));
     }
@@ -179,17 +194,15 @@ void Game::update(float deltaTime) {
 
     physicsSys.updatePlayer(*player1, winds, deltaTime);
     physicsSys.updatePlayer(*player2, winds, deltaTime);
-    physicsSys.updateBullets(bullets, winds, deltaTime); 
+    physicsSys.updateBullets(bullets, winds, deltaTime);
+    physicsSys.updateExplosions(explosions, deltaTime); // Cập nhật animation vụ nổ
 
-    collisionSys.update(*player1, bullets, platforms, items);
-    collisionSys.update(*player2, bullets, platforms, items);
+    // Cập nhật va chạm cho cả 2 player và truyền vector explosions
+    collisionSys.update(*player1, bullets, platforms, items, explosions);
+    collisionSys.update(*player2, bullets, platforms, items, explosions);
 
-    if (player1->position.y > 630) {
-        player1->hp = 0;
-    }
-    if (player2->position.y > 630) {
-        player2->hp = 0;
-    }
+    if (player1->position.y > 630) player1->hp = 0;
+    if (player2->position.y > 630) player2->hp = 0;
 
     if (player1->hp <= 0 || player2->hp <= 0) {
         GameManager::getInstance().setGameState(GameState::GAME_OVER);
@@ -206,10 +219,12 @@ void Game::render() {
     SDL_Renderer* renderer = gameWindow->getRenderer();
 
     if (player1 && player2) {
-        renderSys.render(renderer, *player1, *player2, bullets, platforms, items, winds,
+        // Truyền thêm explosions và texBlast vào RenderSystem
+        renderSys.render(renderer, *player1, *player2, bullets, platforms, items, winds, explosions,
                          texProjectile, texPlayer1, texPlayer2, texBackground, 
                          texWeapon1, texWeapon2,
-                         texItemHealth, texItemMana, texItemShield);
+                         texItemHealth, texItemMana, texItemShield, texBlast,
+                         ResourceManager::getInstance());
 
         if (GameManager::getInstance().getGameState() == GameState::GAME_OVER) {
              SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -224,7 +239,6 @@ void Game::render() {
 
 void Game::clean() {
     ResourceManager::getInstance().clean();
-
     if (player1) delete player1;
     if (player2) delete player2;
     if (gameWindow) {

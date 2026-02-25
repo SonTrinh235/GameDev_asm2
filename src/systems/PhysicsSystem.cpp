@@ -3,6 +3,11 @@
 
 void PhysicSystem::updatePlayer(Player& player, const std::vector<WindColumn>& winds, float deltaTime) {
     if (player.hp <= 0) return;
+
+    if (player.hitTimer > 0) {
+        player.hitTimer -= deltaTime;
+    }
+
     player.velocity.y += GRAVITY * deltaTime;
 
     SDL_FRect playerRect = player.getRect();
@@ -28,20 +33,43 @@ void PhysicSystem::updateBullets(std::vector<Projectile>& bullets, const std::ve
         if (!p.active) continue;
         
         p.existTime += deltaTime;
+        p.animTimer += deltaTime;
 
-        SDL_FPoint bulletPoint = { p.position.x, p.position.y };
-        
-        for (const auto& wind : winds) {
-            SDL_FRect windRect = wind.getRect();
-            if (SDL_PointInRectFloat(&bulletPoint, &windRect)) {
-                p.velocity.y -= wind.force * deltaTime;
-                if (p.velocity.y < -wind.maxUpwardSpeed) {
-                    p.velocity.y = -wind.maxUpwardSpeed;
-                }
-            }
+        float frameDuration = 0.08f;
+        if (p.level == 4) {
+            frameDuration = 0.1f;
         }
+
+        if (p.animTimer >= frameDuration) {
+            p.animTimer = 0.0f;
+            p.currentFrame++;
+            p.currentFrame %= p.maxFrames;
+        }
+
+        if (p.isStatic) continue; 
 
         p.position.x += p.velocity.x * deltaTime;
         p.position.y += p.velocity.y * deltaTime;
+    }
+}
+
+void PhysicSystem::updateExplosions(std::vector<Explosion>& explosions, float deltaTime) {
+    for (auto it = explosions.begin(); it != explosions.end(); ) {
+        it->animTimer += deltaTime;
+        
+        if (it->animTimer >= 0.07f) {
+            it->animTimer = 0.0f;
+            it->currentFrame++;
+        }
+
+        if (it->currentFrame >= it->maxFrames) {
+            it->active = false;
+        }
+
+        if (!it->active) {
+            it = explosions.erase(it);
+        } else {
+            ++it;
+        }
     }
 }

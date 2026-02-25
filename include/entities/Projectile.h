@@ -1,17 +1,29 @@
-#pragma once
+#ifndef PROJECTILE_H
+#define PROJECTILE_H
+
 #include <SDL3/SDL.h>
 #include "../utils/Vector2.h"
 
-struct Projectile {
+class Projectile {
+public:
+    Projectile(float x, float y, float velX, float velY, int owner, float r = 5.0f, float dmg = 10.0f, int lvl = 1);
+
     Vector2 position;
     Vector2 velocity;
     float radius;
     int ownerId;
+    float damage;
     bool active;
     int bounceCount;
-    float existTime; 
-    float damage;
+    float existTime;
+    
+    int level;         
+    int currentFrame;  
+    float animTimer;   
+    int maxFrames;
+    bool isStatic;
 
-    Projectile(float x, float y, float velX, float velY, float r, int owner, float dmg);
     SDL_FRect getRect() const;
 };
+
+#endif
