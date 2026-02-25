@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime> 
+#include <SDL3/SDL.h>
 
 InputSystem inputSys;
 AmmoSystem ammoSys;
@@ -26,7 +27,10 @@ Game::Game() : gameWindow(nullptr), isRunning(false),
                 texBackground(nullptr), 
                 texItemHealth(nullptr), texItemMana(nullptr), texItemShield(nullptr),
                 texBlast(nullptr), // Khởi tạo texture mới
-                itemSpawnTimer(0.0f) {}
+                itemSpawnTimer(0.0f),
+                bgmStream(nullptr), 
+                bgmAudioData(nullptr), 
+                bgmAudioLen(0) {}
 
 Game::~Game() { clean(); }
 
@@ -34,9 +38,21 @@ bool Game::init(const char* title, int width, int height) {
     gameWindow = new Window();
     if (!gameWindow->init(title, width, height)) return false;
 
+    SDL_InitSubSystem(SDL_INIT_AUDIO);
+    SDL_AudioSpec wavSpec;
+    if (!SDL_LoadWAV("assets/sounds/08 - Lake.wav", &wavSpec, &bgmAudioData, &bgmAudioLen)) {
+        std::cout << "Khong the tai nhac nen: " << SDL_GetError() << std::endl;
+    } else {
+        bgmStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &wavSpec, nullptr, nullptr);
+        if (bgmStream) {
+            SDL_PutAudioStreamData(bgmStream, bgmAudioData, bgmAudioLen);
+            SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(bgmStream));
+        } else {
+            std::cout << "Loi tao Audio Stream: " << SDL_GetError() << std::endl;
+        }
+    }
     SDL_Renderer* renderer = gameWindow->getRenderer();
 
-    // Load các texture cơ bản
     ResourceManager::getInstance().loadTexture(renderer, "bg", "assets/textures/background1.bmp");
     texBackground = ResourceManager::getInstance().getTexture("bg");
 
@@ -130,6 +146,14 @@ void Game::handleEvents(SDL_Event* event) {
 void Game::update(float deltaTime) {
     if (!player1 || !player2) return;
     
+    // --- LOGIC LẶP NHẠC NỀN ---
+    if (bgmStream && bgmAudioData) {
+        if (SDL_GetAudioStreamAvailable(bgmStream) < (int)(bgmAudioLen / 2)) {
+            SDL_PutAudioStreamData(bgmStream, bgmAudioData, bgmAudioLen);
+        }
+    }
+    // --------------------------
+
     int numKeys;
     const bool* keys = SDL_GetKeyboardState(&numKeys);
 
@@ -238,6 +262,18 @@ void Game::render() {
 }
 
 void Game::clean() {
+    // --- DỌN DẸP ÂM THANH SDL3 ---
+    if (bgmStream) {
+        SDL_DestroyAudioStream(bgmStream);
+        bgmStream = nullptr;
+    }
+    if (bgmAudioData) {
+        SDL_free(bgmAudioData);
+        bgmAudioData = nullptr;
+    }
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    // ------------------------------
+
     ResourceManager::getInstance().clean();
     if (player1) delete player1;
     if (player2) delete player2;

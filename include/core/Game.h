@@ -46,4 +46,8 @@ private:
     SDL_Texture* texItemMana;
     SDL_Texture* texItemShield;
     SDL_Texture* texBlast; 
+
+    SDL_AudioStream* bgmStream;
+    Uint8* bgmAudioData;
+    Uint32 bgmAudioLen;
 };

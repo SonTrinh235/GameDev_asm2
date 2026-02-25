@@ -5,7 +5,7 @@ Player::Player(int playerId, float startX, float startY)
     : id(playerId), 
       position(startX, startY), 
       velocity(0, 0), 
-      width(32), height(65.5),
+      width(65.5), height(65.5),
       isGrounded(false), 
       mana(MAX_MANA), maxMana(MAX_MANA), 
       shootCooldown(0),
