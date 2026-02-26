@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime> 
+#include <cmath>
 #include <SDL3/SDL.h>
 
 InputSystem inputSys;
@@ -18,6 +19,18 @@ AmmoSystem ammoSys;
 PhysicSystem physicsSys;
 CollisionSystem collisionSys;
 RenderSystem renderSys;
+
+namespace {
+constexpr float MENU_BUTTON_WIDTH = 320.0f;
+constexpr float MENU_BUTTON_HEIGHT = 50.0f;
+constexpr float MENU_BUTTON_GAP = 16.0f;
+constexpr float MENU_BUTTON_START_Y = 220.0f;
+
+constexpr float SETTINGS_SLIDER_X = (SCREEN_WIDTH - 360.0f) * 0.5f;
+constexpr float SETTINGS_SLIDER_Y = 286.0f;
+constexpr float SETTINGS_SLIDER_W = 360.0f;
+constexpr float SETTINGS_SLIDER_H = 18.0f;
+}
 
 Game::Game() : gameWindow(nullptr), isRunning(false), 
                 player1(nullptr), player2(nullptr), 
@@ -30,7 +43,8 @@ Game::Game() : gameWindow(nullptr), isRunning(false),
                 itemSpawnTimer(0.0f),
                 bgmStream(nullptr), 
                 bgmAudioData(nullptr), 
-                bgmAudioLen(0) {}
+                bgmAudioLen(0),
+                isDraggingVolumeSlider(false) {}
 
 Game::~Game() { clean(); }
 
@@ -46,6 +60,7 @@ bool Game::init(const char* title, int width, int height) {
         bgmStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &wavSpec, nullptr, nullptr);
         if (bgmStream) {
             SDL_PutAudioStreamData(bgmStream, bgmAudioData, bgmAudioLen);
+            SDL_SetAudioStreamGain(bgmStream, GameManager::getInstance().getMasterVolume());
             SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(bgmStream));
         } else {
             std::cout << "Loi tao Audio Stream: " << SDL_GetError() << std::endl;
@@ -132,7 +147,7 @@ bool Game::init(const char* title, int width, int height) {
     player1 = new Player(1, 332, 100); 
     player2 = new Player(2, 1016, 100);
 
-    GameManager::getInstance().setGameState(GameState::PLAYING);
+    GameManager::getInstance().setGameState(GameState::MENU);
 
     srand((unsigned int)time(NULL));
     isRunning = true;
@@ -141,6 +156,72 @@ bool Game::init(const char* title, int width, int height) {
 
 void Game::handleEvents(SDL_Event* event) {
     if (event->type == SDL_EVENT_QUIT) isRunning = false;
+
+    if (!gameWindow) return;
+    SDL_Renderer* renderer = gameWindow->getRenderer();
+    GameManager& manager = GameManager::getInstance();
+    GameState currentState = manager.getGameState();
+
+    if (event->type == SDL_EVENT_KEY_DOWN) {
+        if (event->key.scancode == SDL_SCANCODE_ESCAPE) {
+            if (currentState == GameState::PLAYING) {
+                manager.setGameState(GameState::MENU);
+            } else if (currentState == GameState::SETTINGS || currentState == GameState::HOW_TO_PLAY) {
+                manager.setGameState(GameState::MENU);
+            }
+        } else if (currentState == GameState::GAME_OVER && event->key.scancode == SDL_SCANCODE_M) {
+            manager.setGameState(GameState::MENU);
+        }
+    }
+
+    if (!renderer) return;
+    SDL_Event converted = *event;
+    SDL_ConvertEventToRenderCoordinates(renderer, &converted);
+
+    if (converted.type == SDL_EVENT_MOUSE_BUTTON_DOWN && converted.button.button == SDL_BUTTON_LEFT) {
+        float mouseX = converted.button.x;
+        float mouseY = converted.button.y;
+
+        if (currentState == GameState::MENU) {
+            float left = (SCREEN_WIDTH - MENU_BUTTON_WIDTH) * 0.5f;
+            SDL_FRect pvpButton = { left, MENU_BUTTON_START_Y, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+            SDL_FRect pveButton = { left, MENU_BUTTON_START_Y + (MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP), MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+            SDL_FRect settingButton = { left, MENU_BUTTON_START_Y + 2.0f * (MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP), MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+            SDL_FRect howToPlayButton = { left, MENU_BUTTON_START_Y + 3.0f * (MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP), MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+            SDL_FRect quitButton = { left, MENU_BUTTON_START_Y + 4.0f * (MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP), MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+
+            if (pointInRect(mouseX, mouseY, pvpButton)) {
+                startMatch(GameMode::PVP);
+            } else if (pointInRect(mouseX, mouseY, pveButton)) {
+                startMatch(GameMode::PVE);
+            } else if (pointInRect(mouseX, mouseY, settingButton)) {
+                manager.setGameState(GameState::SETTINGS);
+            } else if (pointInRect(mouseX, mouseY, howToPlayButton)) {
+                manager.setGameState(GameState::HOW_TO_PLAY);
+            } else if (pointInRect(mouseX, mouseY, quitButton)) {
+                isRunning = false;
+            }
+        } else if (currentState == GameState::SETTINGS) {
+            SDL_FRect sliderRect = { SETTINGS_SLIDER_X, SETTINGS_SLIDER_Y, SETTINGS_SLIDER_W, SETTINGS_SLIDER_H };
+            SDL_FRect backButton = { (SCREEN_WIDTH - 220.0f) * 0.5f, 420.0f, 220.0f, 52.0f };
+
+            if (pointInRect(mouseX, mouseY, sliderRect)) {
+                isDraggingVolumeSlider = true;
+                setMasterVolumeFromX(mouseX);
+            } else if (pointInRect(mouseX, mouseY, backButton)) {
+                manager.setGameState(GameState::MENU);
+            }
+        } else if (currentState == GameState::HOW_TO_PLAY) {
+            SDL_FRect backButton = { (SCREEN_WIDTH - 220.0f) * 0.5f, 570.0f, 220.0f, 52.0f };
+            if (pointInRect(mouseX, mouseY, backButton)) {
+                manager.setGameState(GameState::MENU);
+            }
+        }
+    } else if (converted.type == SDL_EVENT_MOUSE_MOTION && isDraggingVolumeSlider && currentState == GameState::SETTINGS) {
+        setMasterVolumeFromX(converted.motion.x);
+    } else if (converted.type == SDL_EVENT_MOUSE_BUTTON_UP && converted.button.button == SDL_BUTTON_LEFT) {
+        isDraggingVolumeSlider = false;
+    }
 }
 
 void Game::update(float deltaTime) {
@@ -152,29 +233,21 @@ void Game::update(float deltaTime) {
         }
     }
 
+    GameManager& manager = GameManager::getInstance();
+    GameState gameState = manager.getGameState();
+
     int numKeys;
     const bool* keys = SDL_GetKeyboardState(&numKeys);
 
-    if (GameManager::getInstance().getGameState() == GameState::GAME_OVER) {
+    if (gameState == GameState::GAME_OVER) {
         if (keys[SDL_SCANCODE_R]) {
-            player1->hp = player1->maxHp;
-            player2->hp = player2->maxHp;
-            player1->mana = player1->maxMana;
-            player2->mana = player2->maxMana;
-            
-            player1->position.x = 332; player1->position.y = 100;
-            player2->position.x = 1016; player2->position.y = 100;
-            player1->velocity.x = 0; player1->velocity.y = 0;
-            player2->velocity.x = 0; player2->velocity.y = 0;
-            
-            bullets.clear();
-            items.clear();
-            explosions.clear(); // Xóa sạch vụ nổ khi reset
-            itemSpawnTimer = 0.0f;
-            
-            GameManager::getInstance().resetGame();
+            startMatch(manager.getGameMode());
         }
-        return; 
+        return;
+    }
+
+    if (gameState != GameState::PLAYING) {
+        return;
     }
 
     bullets.erase(std::remove_if(bullets.begin(), bullets.end(), 
@@ -227,7 +300,7 @@ void Game::update(float deltaTime) {
     if (player2->position.y > 630) player2->hp = 0;
 
     if (player1->hp <= 0 || player2->hp <= 0) {
-        GameManager::getInstance().setGameState(GameState::GAME_OVER);
+        manager.setGameState(GameState::GAME_OVER);
     }
 
     float rotSpeed = 360.0f / ROT_TIME;
@@ -257,6 +330,65 @@ void Game::render() {
     }
     
     gameWindow->display();
+}
+
+void Game::resetMatchEntities() {
+    if (!player1 || !player2) return;
+
+    player1->hp = player1->maxHp;
+    player2->hp = player2->maxHp;
+    player1->mana = player1->maxMana;
+    player2->mana = player2->maxMana;
+    player1->shieldTimer = 0.0f;
+    player2->shieldTimer = 0.0f;
+    player1->infiniteManaTimer = 0.0f;
+    player2->infiniteManaTimer = 0.0f;
+    player1->hitTimer = 0.0f;
+    player2->hitTimer = 0.0f;
+    player1->shootCooldown = 0.0f;
+    player2->shootCooldown = 0.0f;
+    player1->isCharging = false;
+    player2->isCharging = false;
+    player1->currentChargeTime = 0.0f;
+    player2->currentChargeTime = 0.0f;
+    player1->useUltimate = false;
+    player2->useUltimate = false;
+
+    player1->position.x = 332;
+    player1->position.y = 100;
+    player2->position.x = 1016;
+    player2->position.y = 100;
+    player1->velocity.x = 0;
+    player1->velocity.y = 0;
+    player2->velocity.x = 0;
+    player2->velocity.y = 0;
+    player1->aimAngle = 0.0f;
+    player2->aimAngle = 180.0f;
+
+    bullets.clear();
+    items.clear();
+    explosions.clear();
+    itemSpawnTimer = 0.0f;
+}
+
+void Game::startMatch(GameMode mode) {
+    GameManager& manager = GameManager::getInstance();
+    manager.setGameMode(mode);
+    manager.resetGame();
+    resetMatchEntities();
+}
+
+void Game::setMasterVolumeFromX(float mouseX) {
+    float normalized = (mouseX - SETTINGS_SLIDER_X) / SETTINGS_SLIDER_W;
+    normalized = std::clamp(normalized, 0.0f, 1.0f);
+    GameManager::getInstance().setMasterVolume(normalized);
+    if (bgmStream) {
+        SDL_SetAudioStreamGain(bgmStream, normalized);
+    }
+}
+
+bool Game::pointInRect(float x, float y, const SDL_FRect& rect) const {
+    return x >= rect.x && x <= (rect.x + rect.w) && y >= rect.y && y <= (rect.y + rect.h);
 }
 
 void Game::clean() {

@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 #include <vector>
 #include "Window.h"
+#include "../managers/GameManager.h"
 #include "../entities/Player.h"
 #include "../entities/Platform.h"
 #include "../entities/Projectile.h"
@@ -50,4 +51,11 @@ private:
     SDL_AudioStream* bgmStream;
     Uint8* bgmAudioData;
     Uint32 bgmAudioLen;
+
+    bool isDraggingVolumeSlider;
+
+    void resetMatchEntities();
+    void startMatch(GameMode mode);
+    void setMasterVolumeFromX(float mouseX);
+    bool pointInRect(float x, float y, const SDL_FRect& rect) const;
 };

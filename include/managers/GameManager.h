@@ -2,8 +2,15 @@
 
 enum class GameState {
     MENU,
+    SETTINGS,
+    HOW_TO_PLAY,
     PLAYING,
     GAME_OVER
+};
+
+enum class GameMode {
+    PVP,
+    PVE
 };
 
 class GameManager {
@@ -18,11 +25,19 @@ public:
     int getScoreP1() const;
     int getScoreP2() const;
 
+    void setGameMode(GameMode mode);
+    GameMode getGameMode() const;
+
+    void setMasterVolume(float volume);
+    float getMasterVolume() const;
+
     void resetGame();
 
 private:
     GameManager();
     GameState currentState;
+    GameMode currentMode;
+    float masterVolume;
     int scoreP1;
     int scoreP2;
 };

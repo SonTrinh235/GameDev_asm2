@@ -40,6 +40,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     game->update(deltaTime);
     game->render();
 
+    if (!game->getIsRunning()) {
+        return SDL_APP_SUCCESS;
+    }
+
     return SDL_APP_CONTINUE; 
 }
 
@@ -51,6 +55,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     }
     
     game->handleEvents(event);
+
+    if (!game->getIsRunning()) {
+        return SDL_APP_SUCCESS;
+    }
+
     return SDL_APP_CONTINUE;
 }
 

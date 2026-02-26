@@ -3,6 +3,19 @@
 #include <SDL3/SDL_ttf.h>
 #include <cmath>
 #include <string>
+#include <cstdio>
+
+namespace {
+constexpr float MENU_BUTTON_WIDTH = 320.0f;
+constexpr float MENU_BUTTON_HEIGHT = 50.0f;
+constexpr float MENU_BUTTON_GAP = 16.0f;
+constexpr float MENU_BUTTON_START_Y = 220.0f;
+
+constexpr float SETTINGS_SLIDER_X = (SCREEN_WIDTH - 360.0f) * 0.5f;
+constexpr float SETTINGS_SLIDER_Y = 286.0f;
+constexpr float SETTINGS_SLIDER_W = 360.0f;
+constexpr float SETTINGS_SLIDER_H = 18.0f;
+}
 
 void RenderSystem::drawFilledCircle(SDL_Renderer* renderer, float cx, float cy, float radius, SDL_Color color) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -33,11 +46,27 @@ void RenderSystem::render(SDL_Renderer* renderer,
                           SDL_Texture* texBlast,
                           ResourceManager& rm)
 {
+    GameManager& manager = GameManager::getInstance();
+    GameState state = manager.getGameState();
+
     if (texBG) {
         SDL_RenderTexture(renderer, texBG, NULL, NULL); 
     } else {
         SDL_SetRenderDrawColor(renderer, 20, 20, 30, 255);
         SDL_RenderClear(renderer);
+    }
+
+    if (state == GameState::MENU) {
+        renderMenu(renderer, manager.getGameMode());
+        return;
+    }
+    if (state == GameState::SETTINGS) {
+        renderSettings(renderer, manager.getMasterVolume());
+        return;
+    }
+    if (state == GameState::HOW_TO_PLAY) {
+        renderHowToPlay(renderer, manager.getGameMode());
+        return;
     }
 
     for (const auto& plat : platforms) {
@@ -112,6 +141,113 @@ void RenderSystem::render(SDL_Renderer* renderer,
     renderExplosions(renderer, explosions, texBlast);
     renderUI(renderer, p1, p2);
     if (p1.hp <= 0 || p2.hp <= 0) renderGameOver(renderer, p1, p2);
+}
+
+void RenderSystem::drawCenteredText(SDL_Renderer* renderer, const char* text, float centerY, int fontSize, SDL_Color color) {
+    TTF_Font* font = TTF_OpenFont("assets/fonts/LibreBaskerville-Italic-VariableFont_wght.ttf", fontSize);
+    if (!font) return;
+
+    SDL_Surface* surf = TTF_RenderText_Blended(font, text, 0, color);
+    if (surf) {
+        SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+        float w = (float)surf->w;
+        float h = (float)surf->h;
+        SDL_FRect dst = { (SCREEN_WIDTH - w) * 0.5f, centerY - h * 0.5f, w, h };
+        SDL_RenderTexture(renderer, tex, NULL, &dst);
+        SDL_DestroyTexture(tex);
+        SDL_DestroySurface(surf);
+    }
+    TTF_CloseFont(font);
+}
+
+void RenderSystem::drawButton(SDL_Renderer* renderer, const SDL_FRect& rect, const SDL_Color& fillColor, const char* label) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, fillColor.r, fillColor.g, fillColor.b, fillColor.a);
+    SDL_RenderFillRect(renderer, &rect);
+
+    SDL_SetRenderDrawColor(renderer, 240, 240, 255, 255);
+    SDL_RenderRect(renderer, &rect);
+
+    drawCenteredText(renderer, label, rect.y + rect.h * 0.5f, 32, {245, 245, 255, 255});
+}
+
+void RenderSystem::renderMenu(SDL_Renderer* renderer, GameMode mode) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 4, 8, 18, 170);
+    SDL_FRect overlay = { 0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT };
+    SDL_RenderFillRect(renderer, &overlay);
+
+    drawCenteredText(renderer, "MAGIC ARENA", 86.0f, 74, {255, 230, 140, 255});
+    drawCenteredText(renderer, "Home", 148.0f, 34, {220, 230, 255, 255});
+
+    float left = (SCREEN_WIDTH - MENU_BUTTON_WIDTH) * 0.5f;
+    SDL_FRect pvpButton = { left, MENU_BUTTON_START_Y, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+    SDL_FRect pveButton = { left, MENU_BUTTON_START_Y + (MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP), MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+    SDL_FRect settingButton = { left, MENU_BUTTON_START_Y + 2.0f * (MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP), MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+    SDL_FRect howToPlayButton = { left, MENU_BUTTON_START_Y + 3.0f * (MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP), MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+    SDL_FRect quitButton = { left, MENU_BUTTON_START_Y + 4.0f * (MENU_BUTTON_HEIGHT + MENU_BUTTON_GAP), MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT };
+
+    drawButton(renderer, pvpButton, {40, 120, 255, 210}, "PvP");
+    drawButton(renderer, pveButton, {95, 80, 210, 210}, "PvE");
+    drawButton(renderer, settingButton, {40, 170, 130, 210}, "Setting");
+    drawButton(renderer, howToPlayButton, {155, 115, 42, 210}, "How To Play");
+    drawButton(renderer, quitButton, {180, 65, 65, 210}, "Quit");
+
+    const char* modeText = (mode == GameMode::PVE) ? "Last mode: PvE" : "Last mode: PvP";
+    drawCenteredText(renderer, modeText, 610.0f, 24, {220, 220, 220, 255});
+}
+
+void RenderSystem::renderSettings(SDL_Renderer* renderer, float volume) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 5, 10, 24, 190);
+    SDL_FRect overlay = { 0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT };
+    SDL_RenderFillRect(renderer, &overlay);
+
+    drawCenteredText(renderer, "Settings", 96.0f, 58, {255, 235, 170, 255});
+    drawCenteredText(renderer, "Master Volume", 238.0f, 30, {220, 230, 255, 255});
+
+    SDL_FRect sliderBG = { SETTINGS_SLIDER_X, SETTINGS_SLIDER_Y, SETTINGS_SLIDER_W, SETTINGS_SLIDER_H };
+    SDL_SetRenderDrawColor(renderer, 44, 56, 80, 255);
+    SDL_RenderFillRect(renderer, &sliderBG);
+
+    SDL_FRect sliderFill = sliderBG;
+    sliderFill.w *= volume;
+    SDL_SetRenderDrawColor(renderer, 76, 180, 255, 255);
+    SDL_RenderFillRect(renderer, &sliderFill);
+
+    float knobX = SETTINGS_SLIDER_X + SETTINGS_SLIDER_W * volume;
+    SDL_FRect knob = { knobX - 8.0f, SETTINGS_SLIDER_Y - 7.0f, 16.0f, SETTINGS_SLIDER_H + 14.0f };
+    SDL_SetRenderDrawColor(renderer, 235, 245, 255, 255);
+    SDL_RenderFillRect(renderer, &knob);
+
+    char volumeText[32];
+    std::snprintf(volumeText, sizeof(volumeText), "Volume: %d%%", (int)std::round(volume * 100.0f));
+    drawCenteredText(renderer, volumeText, 344.0f, 28, {220, 230, 250, 255});
+
+    SDL_FRect backButton = { (SCREEN_WIDTH - 220.0f) * 0.5f, 420.0f, 220.0f, 52.0f };
+    drawButton(renderer, backButton, {120, 90, 180, 220}, "Back");
+}
+
+void RenderSystem::renderHowToPlay(SDL_Renderer* renderer, GameMode mode) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 4, 7, 20, 185);
+    SDL_FRect overlay = { 0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT };
+    SDL_RenderFillRect(renderer, &overlay);
+
+    drawCenteredText(renderer, "How To Play", 84.0f, 52, {255, 228, 165, 255});
+    drawCenteredText(renderer, "Player 1: A D move, W jump, SPACE fire, F ultimate", 190.0f, 24, {220, 232, 255, 255});
+    drawCenteredText(renderer, "Player 2: LEFT RIGHT move, UP jump, ENTER fire, KP_0 ultimate", 230.0f, 24, {220, 232, 255, 255});
+    drawCenteredText(renderer, "R: rematch when game over | M or ESC: back to menu", 270.0f, 24, {220, 232, 255, 255});
+    drawCenteredText(renderer, "Collect items to recover HP, mana and shield.", 326.0f, 24, {240, 220, 180, 255});
+
+    if (mode == GameMode::PVE) {
+        drawCenteredText(renderer, "PvE is currently in preview and runs with PvP controls.", 398.0f, 24, {255, 205, 150, 255});
+    } else {
+        drawCenteredText(renderer, "Choose PvE on Home to try the preview mode.", 398.0f, 24, {255, 205, 150, 255});
+    }
+
+    SDL_FRect backButton = { (SCREEN_WIDTH - 220.0f) * 0.5f, 570.0f, 220.0f, 52.0f };
+    drawButton(renderer, backButton, {120, 90, 180, 220}, "Back");
 }
 
 void RenderSystem::renderExplosions(SDL_Renderer* renderer, const std::vector<Explosion>& explosions, SDL_Texture* texBlast) {
