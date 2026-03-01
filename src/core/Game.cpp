@@ -30,6 +30,18 @@ constexpr float SETTINGS_SLIDER_X = (SCREEN_WIDTH - 360.0f) * 0.5f;
 constexpr float SETTINGS_SLIDER_Y = 286.0f;
 constexpr float SETTINGS_SLIDER_W = 360.0f;
 constexpr float SETTINGS_SLIDER_H = 18.0f;
+
+float randomRange(float minValue, float maxValue) {
+    float t = (float)rand() / (float)RAND_MAX;
+    return minValue + t * (maxValue - minValue);
+}
+
+float shortestAngleDelta(float fromDeg, float toDeg) {
+    float delta = toDeg - fromDeg;
+    while (delta > 180.0f) delta -= 360.0f;
+    while (delta < -180.0f) delta += 360.0f;
+    return delta;
+}
 }
 
 Game::Game() : gameWindow(nullptr), isRunning(false), 
@@ -44,7 +56,13 @@ Game::Game() : gameWindow(nullptr), isRunning(false),
                 bgmStream(nullptr), 
                 bgmAudioData(nullptr), 
                 bgmAudioLen(0),
-                isDraggingVolumeSlider(false) {}
+                isDraggingVolumeSlider(false),
+                aiMoveSwitchTimer(0.0f),
+                aiJumpCooldownTimer(0.0f),
+                aiShootDecisionTimer(0.0f),
+                aiTargetChargeTime(0.35f),
+                aiUltimateDecisionTimer(0.0f),
+                aiMoveDirection(-1) {}
 
 Game::~Game() { clean(); }
 
@@ -284,7 +302,12 @@ void Game::update(float deltaTime) {
 
     inputSys.update(*player1, deltaTime, keys);
     ammoSys.update(*player1, deltaTime, bullets);
-    inputSys.update(*player2, deltaTime, keys);
+
+    if (manager.getGameMode() == GameMode::PVE) {
+        updatePvEAI(deltaTime);
+    } else {
+        inputSys.update(*player2, deltaTime, keys);
+    }
     ammoSys.update(*player2, deltaTime, bullets);
 
     physicsSys.updatePlayer(*player1, winds, deltaTime);
@@ -305,7 +328,9 @@ void Game::update(float deltaTime) {
 
     float rotSpeed = 360.0f / ROT_TIME;
     player1->aimAngle += rotSpeed * deltaTime;
-    player2->aimAngle += rotSpeed * deltaTime;
+    if (manager.getGameMode() == GameMode::PVP) {
+        player2->aimAngle += rotSpeed * deltaTime;
+    }
 }
 
 void Game::render() {
@@ -353,6 +378,13 @@ void Game::resetMatchEntities() {
     player2->currentChargeTime = 0.0f;
     player1->useUltimate = false;
     player2->useUltimate = false;
+    isDraggingVolumeSlider = false;
+    aiMoveSwitchTimer = 0.0f;
+    aiJumpCooldownTimer = 0.0f;
+    aiShootDecisionTimer = randomRange(0.2f, 0.5f);
+    aiTargetChargeTime = randomRange(0.15f, 0.75f);
+    aiUltimateDecisionTimer = randomRange(1.0f, 1.8f);
+    aiMoveDirection = -1;
 
     player1->position.x = 332;
     player1->position.y = 100;
@@ -389,6 +421,97 @@ void Game::setMasterVolumeFromX(float mouseX) {
 
 bool Game::pointInRect(float x, float y, const SDL_FRect& rect) const {
     return x >= rect.x && x <= (rect.x + rect.w) && y >= rect.y && y <= (rect.y + rect.h);
+}
+
+void Game::updatePvEAI(float deltaTime) {
+    if (!player1 || !player2) return;
+    if (player1->hp <= 0 || player2->hp <= 0) return;
+
+    aiMoveSwitchTimer -= deltaTime;
+    aiJumpCooldownTimer -= deltaTime;
+    aiShootDecisionTimer -= deltaTime;
+    aiUltimateDecisionTimer -= deltaTime;
+
+    float p1CenterX = player1->position.x + player1->width * 0.5f;
+    float p1CenterY = player1->position.y + player1->height * 0.5f;
+    float p2CenterX = player2->position.x + player2->width * 0.5f;
+    float p2CenterY = player2->position.y + player2->height * 0.5f;
+    float dx = p1CenterX - p2CenterX;
+    float dy = p1CenterY - p2CenterY;
+    float absDx = std::fabs(dx);
+
+    bool incomingThreat = false;
+    for (const auto& bullet : bullets) {
+        if (!bullet.active || bullet.ownerId != 1 || bullet.level == 4) continue;
+
+        float bulletCenterX = bullet.position.x + bullet.radius;
+        float bulletCenterY = bullet.position.y + bullet.radius;
+        float toBotX = p2CenterX - bulletCenterX;
+        float toBotY = p2CenterY - bulletCenterY;
+        float dot = bullet.velocity.x * toBotX + bullet.velocity.y * toBotY;
+
+        if (dot > 0.0f && std::fabs(toBotY) < 92.0f && std::fabs(toBotX) < 260.0f) {
+            incomingThreat = true;
+            break;
+        }
+    }
+
+    if (aiMoveSwitchTimer <= 0.0f) {
+        if (absDx > 90.0f) {
+            aiMoveDirection = (dx > 0.0f) ? 1 : -1;
+        } else {
+            int roll = rand() % 100;
+            if (roll < 35) aiMoveDirection = (dx > 0.0f) ? -1 : 1;
+            else if (roll < 70) aiMoveDirection = (dx > 0.0f) ? 1 : -1;
+            else aiMoveDirection = 0;
+        }
+        aiMoveSwitchTimer = randomRange(0.18f, 0.48f);
+    }
+
+    if (player2->position.x < 70.0f) aiMoveDirection = 1;
+    if (player2->position.x > SCREEN_WIDTH - player2->width - 70.0f) aiMoveDirection = -1;
+    player2->velocity.x = aiMoveDirection * (MOVE_SPEED * 0.86f);
+
+    bool shouldJumpToAttack = (dy < -65.0f && absDx < 280.0f);
+    if (player2->isGrounded && aiJumpCooldownTimer <= 0.0f && (incomingThreat || shouldJumpToAttack)) {
+        player2->velocity.y = JUMP_FORCE;
+        player2->isGrounded = false;
+        aiJumpCooldownTimer = incomingThreat ? randomRange(0.85f, 1.25f) : randomRange(0.95f, 1.45f);
+    }
+
+    float predictedX = p1CenterX + player1->velocity.x * 0.22f + randomRange(-18.0f, 18.0f);
+    float predictedY = p1CenterY + player1->velocity.y * 0.10f + randomRange(-11.0f, 11.0f);
+    float targetAngle = std::atan2(predictedY - p2CenterY, predictedX - p2CenterX) * (180.0f / PI);
+    float delta = shortestAngleDelta(player2->aimAngle, targetAngle);
+    float maxTurnStep = 280.0f * deltaTime;
+    if (delta > maxTurnStep) delta = maxTurnStep;
+    if (delta < -maxTurnStep) delta = -maxTurnStep;
+    player2->aimAngle += delta;
+
+    if (player2->mana >= 100.0f && player2->shootCooldown <= 0.0f && !player2->isCharging && aiUltimateDecisionTimer <= 0.0f) {
+        if (absDx < 560.0f && (rand() % 100) < 24) {
+            player2->useUltimate = true;
+            aiShootDecisionTimer = randomRange(0.65f, 1.05f);
+        }
+        aiUltimateDecisionTimer = randomRange(1.2f, 2.2f);
+    }
+
+    if (player2->shootCooldown <= 0.0f && player2->mana >= MANA_COST) {
+        if (!player2->isCharging && aiShootDecisionTimer <= 0.0f && absDx < 760.0f) {
+            player2->isCharging = true;
+            aiTargetChargeTime = randomRange(0.16f, 0.78f);
+            aiShootDecisionTimer = randomRange(0.55f, 1.15f);
+        }
+
+        if (player2->isCharging) {
+            bool releaseForThreat = incomingThreat && absDx < 300.0f && player2->currentChargeTime > 0.15f;
+            if (player2->currentChargeTime >= aiTargetChargeTime || releaseForThreat) {
+                player2->isCharging = false;
+            }
+        }
+    } else if (player2->isCharging) {
+        player2->isCharging = false;
+    }
 }
 
 void Game::clean() {

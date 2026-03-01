@@ -53,9 +53,16 @@ private:
     Uint32 bgmAudioLen;
 
     bool isDraggingVolumeSlider;
+    float aiMoveSwitchTimer;
+    float aiJumpCooldownTimer;
+    float aiShootDecisionTimer;
+    float aiTargetChargeTime;
+    float aiUltimateDecisionTimer;
+    int aiMoveDirection;
 
     void resetMatchEntities();
     void startMatch(GameMode mode);
     void setMasterVolumeFromX(float mouseX);
     bool pointInRect(float x, float y, const SDL_FRect& rect) const;
+    void updatePvEAI(float deltaTime);
 };

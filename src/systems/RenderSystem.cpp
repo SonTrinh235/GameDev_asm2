@@ -241,9 +241,9 @@ void RenderSystem::renderHowToPlay(SDL_Renderer* renderer, GameMode mode) {
     drawCenteredText(renderer, "Collect items to recover HP, mana and shield.", 326.0f, 24, {240, 220, 180, 255});
 
     if (mode == GameMode::PVE) {
-        drawCenteredText(renderer, "PvE is currently in preview and runs with PvP controls.", 398.0f, 24, {255, 205, 150, 255});
+        drawCenteredText(renderer, "PvE active: Player 2 is controlled by basic combat AI.", 398.0f, 24, {255, 205, 150, 255});
     } else {
-        drawCenteredText(renderer, "Choose PvE on Home to try the preview mode.", 398.0f, 24, {255, 205, 150, 255});
+        drawCenteredText(renderer, "Choose PvE on Home to battle against basic AI.", 398.0f, 24, {255, 205, 150, 255});
     }
 
     SDL_FRect backButton = { (SCREEN_WIDTH - 220.0f) * 0.5f, 570.0f, 220.0f, 52.0f };
