@@ -26,6 +26,9 @@ public:
                 SDL_Texture* texBlast,
                 ResourceManager& rm);
 
+    void renderPauseMenu(SDL_Renderer* renderer, float screenWidth, float screenHeight);
+    void renderPauseButton(SDL_Renderer* renderer, float screenWidth);        
+
 private:
     void renderMenu(SDL_Renderer* renderer, GameMode mode);
     void renderSettings(SDL_Renderer* renderer, float volume);
@@ -38,4 +41,5 @@ private:
     void drawFilledCircle(SDL_Renderer* renderer, float cx, float cy, float radius, SDL_Color color);
     void drawButton(SDL_Renderer* renderer, const SDL_FRect& rect, const SDL_Color& fillColor, const char* label);
     void drawCenteredText(SDL_Renderer* renderer, const char* text, float centerY, int fontSize, SDL_Color color);
+    
 };

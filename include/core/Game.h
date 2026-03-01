@@ -36,6 +36,7 @@ private:
     std::vector<Explosion> explosions;
 
     float itemSpawnTimer;
+    float gameOverTimer;
     
     SDL_Texture* texProjectile; 
     SDL_Texture* texPlayer1;
@@ -51,6 +52,10 @@ private:
     SDL_AudioStream* bgmStream;
     Uint8* bgmAudioData;
     Uint32 bgmAudioLen;
+
+    SDL_AudioStream* battleBgmStream;
+    Uint8* battleBgmAudioData;
+    Uint32 battleBgmAudioLen;
 
     bool isDraggingVolumeSlider;
     float aiMoveSwitchTimer;

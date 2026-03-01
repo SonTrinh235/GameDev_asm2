@@ -5,6 +5,7 @@ enum class GameState {
     SETTINGS,
     HOW_TO_PLAY,
     PLAYING,
+    PAUSED,
     GAME_OVER
 };
 

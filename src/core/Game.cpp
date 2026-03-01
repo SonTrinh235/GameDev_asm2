@@ -51,11 +51,15 @@ Game::Game() : gameWindow(nullptr), isRunning(false),
                 texWeapon1(nullptr), texWeapon2(nullptr),
                 texBackground(nullptr), 
                 texItemHealth(nullptr), texItemMana(nullptr), texItemShield(nullptr),
-                texBlast(nullptr), // Khởi tạo texture mới
+                texBlast(nullptr), 
                 itemSpawnTimer(0.0f),
+                gameOverTimer(0.0f), 
                 bgmStream(nullptr), 
                 bgmAudioData(nullptr), 
                 bgmAudioLen(0),
+                battleBgmStream(nullptr),    
+                battleBgmAudioData(nullptr), 
+                battleBgmAudioLen(0),        
                 isDraggingVolumeSlider(false),
                 aiMoveSwitchTimer(0.0f),
                 aiJumpCooldownTimer(0.0f),
@@ -71,19 +75,29 @@ bool Game::init(const char* title, int width, int height) {
     if (!gameWindow->init(title, width, height)) return false;
 
     SDL_InitSubSystem(SDL_INIT_AUDIO);
+    
     SDL_AudioSpec wavSpec;
     if (!SDL_LoadWAV("assets/sounds/08 - Lake.wav", &wavSpec, &bgmAudioData, &bgmAudioLen)) {
-        std::cout << "Khong the tai nhac nen: " << SDL_GetError() << std::endl;
+        std::cout << "Khong the tai nhac nen Menu: " << SDL_GetError() << std::endl;
     } else {
         bgmStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &wavSpec, nullptr, nullptr);
         if (bgmStream) {
-            SDL_PutAudioStreamData(bgmStream, bgmAudioData, bgmAudioLen);
             SDL_SetAudioStreamGain(bgmStream, GameManager::getInstance().getMasterVolume());
             SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(bgmStream));
-        } else {
-            std::cout << "Loi tao Audio Stream: " << SDL_GetError() << std::endl;
         }
     }
+
+    SDL_AudioSpec battleSpec;
+    if (!SDL_LoadWAV("assets/sounds/58 - Battle! (Cynthia).wav", &battleSpec, &battleBgmAudioData, &battleBgmAudioLen)) {
+        std::cout << "Khong the tai nhac Battle: " << SDL_GetError() << std::endl;
+    } else {
+        battleBgmStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &battleSpec, nullptr, nullptr);
+        if (battleBgmStream) {
+            SDL_SetAudioStreamGain(battleBgmStream, GameManager::getInstance().getMasterVolume());
+            SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(battleBgmStream));
+        }
+    }
+
     SDL_Renderer* renderer = gameWindow->getRenderer();
 
     ResourceManager::getInstance().loadTexture(renderer, "bg", "assets/textures/background1.bmp");
@@ -113,23 +127,19 @@ bool Game::init(const char* title, int width, int height) {
     ResourceManager::getInstance().loadTexture(renderer, "shield", "assets/textures/shield.bmp");
     texItemShield = ResourceManager::getInstance().getTexture("shield");
 
-    // Load Blast.bmp cho hiệu ứng nổ
     ResourceManager::getInstance().loadTexture(renderer, "blast", "assets/textures/Blast.bmp");
     texBlast = ResourceManager::getInstance().getTexture("blast");
 
-    // Player 1 textures
     ResourceManager::getInstance().loadTexture(renderer, "Dark_1", "assets/textures/Dark_1.bmp");
     ResourceManager::getInstance().loadTexture(renderer, "Dark_2", "assets/textures/Dark_2.bmp");
     ResourceManager::getInstance().loadTexture(renderer, "Dark_3", "assets/textures/Dark_3.bmp");
     ResourceManager::getInstance().loadTexture(renderer, "Ultimate_P1", "assets/textures/Brimstone_Gigablast.bmp");
     
-    // Player 2 textures
     ResourceManager::getInstance().loadTexture(renderer, "Nebula_1", "assets/textures/Nebula_1.bmp");
     ResourceManager::getInstance().loadTexture(renderer, "Nebula_2", "assets/textures/Nebula_2.bmp");
     ResourceManager::getInstance().loadTexture(renderer, "Nebula_3", "assets/textures/Nebula_3.bmp");
     ResourceManager::getInstance().loadTexture(renderer, "Ultimate_P2", "assets/textures/Death_Fire.bmp");
 
-    // Platforms
     platforms.push_back({186, 600, 54, 15});
     platforms.push_back({230, 596, 54, 15});
     platforms.push_back({274, 591, 54, 15});
@@ -183,7 +193,9 @@ void Game::handleEvents(SDL_Event* event) {
     if (event->type == SDL_EVENT_KEY_DOWN) {
         if (event->key.scancode == SDL_SCANCODE_ESCAPE) {
             if (currentState == GameState::PLAYING) {
-                manager.setGameState(GameState::MENU);
+                manager.setGameState(GameState::PAUSED); 
+            } else if (currentState == GameState::PAUSED) {
+                manager.setGameState(GameState::PLAYING); 
             } else if (currentState == GameState::SETTINGS || currentState == GameState::HOW_TO_PLAY) {
                 manager.setGameState(GameState::MENU);
             }
@@ -219,6 +231,24 @@ void Game::handleEvents(SDL_Event* event) {
             } else if (pointInRect(mouseX, mouseY, quitButton)) {
                 isRunning = false;
             }
+        } else if (currentState == GameState::PLAYING) {
+            float btnWidth = 40.0f;
+            float pauseX = (SCREEN_WIDTH - btnWidth) * 0.5f;
+            SDL_FRect pauseBtn = { pauseX, 20.0f, btnWidth, 40.0f };
+            if (pointInRect(mouseX, mouseY, pauseBtn)) {
+                manager.setGameState(GameState::PAUSED);
+            }
+        } else if (currentState == GameState::PAUSED) {
+            float btnWidth = 240.0f;
+            float left = (SCREEN_WIDTH - btnWidth) * 0.5f;
+            SDL_FRect resumeBtn = { left, SCREEN_HEIGHT * 0.45f, btnWidth, 50.0f };
+            SDL_FRect menuBtn = { left, SCREEN_HEIGHT * 0.45f + 70.0f, btnWidth, 50.0f };
+
+            if (pointInRect(mouseX, mouseY, resumeBtn)) {
+                manager.setGameState(GameState::PLAYING);
+            } else if (pointInRect(mouseX, mouseY, menuBtn)) {
+                manager.setGameState(GameState::MENU);
+            }
         } else if (currentState == GameState::SETTINGS) {
             SDL_FRect sliderRect = { SETTINGS_SLIDER_X, SETTINGS_SLIDER_Y, SETTINGS_SLIDER_W, SETTINGS_SLIDER_H };
             SDL_FRect backButton = { (SCREEN_WIDTH - 220.0f) * 0.5f, 420.0f, 220.0f, 52.0f };
@@ -245,19 +275,46 @@ void Game::handleEvents(SDL_Event* event) {
 void Game::update(float deltaTime) {
     if (!player1 || !player2) return;
     
-    if (bgmStream && bgmAudioData) {
-        if (SDL_GetAudioStreamAvailable(bgmStream) < (int)(bgmAudioLen / 2)) {
-            SDL_PutAudioStreamData(bgmStream, bgmAudioData, bgmAudioLen);
-        }
-    }
-
     GameManager& manager = GameManager::getInstance();
     GameState gameState = manager.getGameState();
+
+    static GameState lastState = GameState::MENU;
+    bool wasBattle = (lastState == GameState::PLAYING || lastState == GameState::PAUSED || lastState == GameState::GAME_OVER);
+    bool isBattle = (gameState == GameState::PLAYING || gameState == GameState::PAUSED || gameState == GameState::GAME_OVER);
+
+    if (wasBattle != isBattle) {
+        if (isBattle) {
+            if (bgmStream) SDL_ClearAudioStream(bgmStream); 
+        } else {
+            if (battleBgmStream) SDL_ClearAudioStream(battleBgmStream); 
+        }
+    }
+    lastState = gameState;
+
+    if (isBattle) {
+        if (battleBgmStream && battleBgmAudioData) {
+            if (SDL_GetAudioStreamAvailable(battleBgmStream) < (int)(battleBgmAudioLen / 2)) {
+                SDL_PutAudioStreamData(battleBgmStream, battleBgmAudioData, battleBgmAudioLen);
+            }
+        }
+    } else {
+        if (bgmStream && bgmAudioData) {
+            if (SDL_GetAudioStreamAvailable(bgmStream) < (int)(bgmAudioLen / 2)) {
+                SDL_PutAudioStreamData(bgmStream, bgmAudioData, bgmAudioLen);
+            }
+        }
+    }
 
     int numKeys;
     const bool* keys = SDL_GetKeyboardState(&numKeys);
 
     if (gameState == GameState::GAME_OVER) {
+        gameOverTimer += deltaTime;
+
+        if (gameOverTimer >= 5.0f) {
+            manager.setGameState(GameState::MENU);
+        }
+
         if (keys[SDL_SCANCODE_R]) {
             startMatch(manager.getGameMode());
         }
@@ -265,7 +322,7 @@ void Game::update(float deltaTime) {
     }
 
     if (gameState != GameState::PLAYING) {
-        return;
+        return; 
     }
 
     bullets.erase(std::remove_if(bullets.begin(), bullets.end(), 
@@ -313,9 +370,8 @@ void Game::update(float deltaTime) {
     physicsSys.updatePlayer(*player1, winds, deltaTime);
     physicsSys.updatePlayer(*player2, winds, deltaTime);
     physicsSys.updateBullets(bullets, winds, deltaTime);
-    physicsSys.updateExplosions(explosions, deltaTime); // Cập nhật animation vụ nổ
+    physicsSys.updateExplosions(explosions, deltaTime);
 
-    // Cập nhật va chạm cho cả 2 player và truyền vector explosions
     collisionSys.update(*player1, bullets, platforms, items, explosions);
     collisionSys.update(*player2, bullets, platforms, items, explosions);
 
@@ -337,16 +393,26 @@ void Game::render() {
     if (!gameWindow) return;
     gameWindow->clear();
     SDL_Renderer* renderer = gameWindow->getRenderer();
+    GameState currentState = GameManager::getInstance().getGameState(); 
 
     if (player1 && player2) {
-        // Truyền thêm explosions và texBlast vào RenderSystem
         renderSys.render(renderer, *player1, *player2, bullets, platforms, items, winds, explosions,
                          texProjectile, texPlayer1, texPlayer2, texBackground, 
                          texWeapon1, texWeapon2,
                          texItemHealth, texItemMana, texItemShield, texBlast,
                          ResourceManager::getInstance());
 
-        if (GameManager::getInstance().getGameState() == GameState::GAME_OVER) {
+        if (currentState == GameState::PLAYING) {
+            float btnWidth = 40.0f;
+            float pauseX = (SCREEN_WIDTH - btnWidth) * 0.5f;
+            renderSys.renderPauseButton(renderer, SCREEN_WIDTH);
+        }
+
+        if (currentState == GameState::PAUSED) {
+            renderSys.renderPauseMenu(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+        }
+
+        if (currentState == GameState::GAME_OVER) {
              SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
              SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
              SDL_FRect overlay = {0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT};
@@ -401,6 +467,7 @@ void Game::resetMatchEntities() {
     items.clear();
     explosions.clear();
     itemSpawnTimer = 0.0f;
+    gameOverTimer = 0.0f; 
 }
 
 void Game::startMatch(GameMode mode) {
@@ -416,6 +483,9 @@ void Game::setMasterVolumeFromX(float mouseX) {
     GameManager::getInstance().setMasterVolume(normalized);
     if (bgmStream) {
         SDL_SetAudioStreamGain(bgmStream, normalized);
+    }
+    if (battleBgmStream) {
+        SDL_SetAudioStreamGain(battleBgmStream, normalized);
     }
 }
 
@@ -523,6 +593,16 @@ void Game::clean() {
         SDL_free(bgmAudioData);
         bgmAudioData = nullptr;
     }
+    
+    if (battleBgmStream) {
+        SDL_DestroyAudioStream(battleBgmStream);
+        battleBgmStream = nullptr;
+    }
+    if (battleBgmAudioData) {
+        SDL_free(battleBgmAudioData);
+        battleBgmAudioData = nullptr;
+    }
+
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
     ResourceManager::getInstance().clean();

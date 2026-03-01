@@ -379,3 +379,51 @@ void RenderSystem::renderGameOver(SDL_Renderer* renderer, const Player& p1, cons
         TTF_CloseFont(font);
     }
 }
+
+void RenderSystem::renderPauseButton(SDL_Renderer* renderer, float screenWidth) {
+    float btnWidth = 40.0f;
+    float btnHeight = 40.0f;
+    float pauseX = (screenWidth - btnWidth) * 0.5f; 
+    float pauseY = 20.0f;                           
+
+    SDL_FRect pauseBtn = { pauseX, pauseY, btnWidth, btnHeight };
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 100, 100, 100, 200);
+    SDL_RenderFillRect(renderer, &pauseBtn);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderRect(renderer, &pauseBtn);
+
+    float barWidth = 6.0f;  
+    float barHeight = 20.0f; 
+    float spacing = 6.0f;    
+
+    float centerX = pauseBtn.x + pauseBtn.w * 0.5f;
+    float centerY = pauseBtn.y + pauseBtn.h * 0.5f;
+
+    SDL_FRect bar1 = { centerX - (spacing * 0.5f) - barWidth, centerY - (barHeight * 0.5f), barWidth, barHeight };
+    SDL_FRect bar2 = { centerX + (spacing * 0.5f), centerY - (barHeight * 0.5f), barWidth, barHeight };
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(renderer, &bar1);
+    SDL_RenderFillRect(renderer, &bar2);
+}
+
+void RenderSystem::renderPauseMenu(SDL_Renderer* renderer, float screenWidth, float screenHeight) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
+    SDL_FRect overlay = {0, 0, screenWidth, screenHeight};
+    SDL_RenderFillRect(renderer, &overlay);
+
+    drawCenteredText(renderer, "PAUSED", screenHeight * 0.3f, 48, {255, 255, 255, 255});
+
+    float btnWidth = 240.0f;
+    float btnHeight = 50.0f;
+    float left = (screenWidth - btnWidth) * 0.5f;
+
+    SDL_FRect resumeBtn = { left, screenHeight * 0.45f, btnWidth, btnHeight };
+    SDL_FRect menuBtn = { left, screenHeight * 0.45f + 70.0f, btnWidth, btnHeight };
+
+    drawButton(renderer, resumeBtn, {50, 150, 50, 255}, "RESUME");
+    drawButton(renderer, menuBtn, {150, 50, 50, 255}, "MAIN MENU");
+}
