@@ -68,12 +68,12 @@ void RenderSystem::render(SDL_Renderer* renderer,
         renderHowToPlay(renderer, manager.getGameMode());
         return;
     }
-
-    for (const auto& plat : platforms) {
-        SDL_FRect rect = plat.getRect();
-        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 180); 
-        SDL_RenderFillRect(renderer, &rect);
-    }
+    // for (const auto& plat : platforms) {
+    //     SDL_FRect rect = plat.getRect();
+    //     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 180); 
+    //     SDL_RenderFillRect(renderer, &rect);
+    // }
+    (void)platforms;
     
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     Uint64 ticks = SDL_GetTicks(); 
@@ -324,15 +324,14 @@ void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SD
         float wWidth, wHeight;
         SDL_GetTextureSize(currentWeaponTex, &wWidth, &wHeight);
         float rW = wWidth / 3.0f, rH = wHeight / 3.0f;
-        SDL_FRect weaponRect = { cx, cy - rH / 2, rW, rH };
-        SDL_FPoint center = { 0.0f, rH / 2 };
+        SDL_FRect weaponRect = { cx - rW * 0.5f, cy - rH, rW, rH };
+        SDL_FPoint center = { rW * 0.5f, rH };
         float renderAngle = player.aimAngle + 90.0f;
-        SDL_FlipMode wFlip = (player.aimAngle > 90 && player.aimAngle < 270) ? SDL_FLIP_VERTICAL : SDL_FLIP_NONE;
         
         if (player.hitTimer > 0) SDL_SetTextureColorMod(currentWeaponTex, 255, 150, 150);
         else SDL_SetTextureColorMod(currentWeaponTex, 255, 255, 255);
         
-        SDL_RenderTextureRotated(renderer, currentWeaponTex, NULL, &weaponRect, renderAngle, &center, wFlip);
+        SDL_RenderTextureRotated(renderer, currentWeaponTex, NULL, &weaponRect, renderAngle, &center, SDL_FLIP_NONE);
     }
 }
 

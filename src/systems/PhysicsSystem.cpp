@@ -1,5 +1,6 @@
 #include "../../include/systems/PhysicsSystem.h"
 #include "../../include/utils/Constants.h"
+#include <cmath>
 
 void PhysicSystem::updatePlayer(Player& player, const std::vector<WindColumn>& winds, float deltaTime) {
     if (player.hp <= 0) return;
@@ -47,6 +48,34 @@ void PhysicSystem::updateBullets(std::vector<Projectile>& bullets, const std::ve
         }
 
         if (p.isStatic) continue; 
+
+        if (p.level != 4 && !winds.empty()) {
+            SDL_FRect bulletRect = p.getRect();
+            for (const auto& wind : winds) {
+                SDL_FRect windRect = wind.getRect();
+                if (!SDL_HasRectIntersectionFloat(&bulletRect, &windRect)) {
+                    continue;
+                }
+
+                float speed = std::sqrt((p.velocity.x * p.velocity.x) + (p.velocity.y * p.velocity.y));
+                if (speed < 1.0f) {
+                    break;
+                }
+
+                float bulletCenterX = p.position.x + p.radius;
+                float windCenterX = windRect.x + windRect.w * 0.5f;
+                float swirlDir = (bulletCenterX < windCenterX) ? 1.0f : -1.0f;
+
+                float angle = std::atan2(p.velocity.y, p.velocity.x);
+                float swirlTurn = swirlDir * 0.6f * deltaTime;
+                float upTurn = -0.35f * deltaTime * (wind.force / GRAVITY);
+                angle += swirlTurn + upTurn * 1.5;
+
+                p.velocity.x = std::cos(angle) * speed;
+                p.velocity.y = std::sin(angle) * speed;
+                break;
+            }
+        }
 
         p.position.x += p.velocity.x * deltaTime;
         p.position.y += p.velocity.y * deltaTime;
