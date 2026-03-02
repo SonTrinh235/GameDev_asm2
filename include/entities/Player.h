@@ -6,6 +6,7 @@
 struct Player {
     int id;
     Vector2 position;
+    float previousY;
     Vector2 velocity;
     float width, height;
     bool isGrounded;

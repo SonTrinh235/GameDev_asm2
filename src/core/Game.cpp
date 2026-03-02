@@ -465,6 +465,8 @@ void Game::resetMatchEntities() {
     player1->position.y = 100;
     player2->position.x = 1016;
     player2->position.y = 100;
+    player1->previousY = player1->position.y;
+    player2->previousY = player2->position.y;
     player1->velocity.x = 0;
     player1->velocity.y = 0;
     player2->velocity.x = 0;

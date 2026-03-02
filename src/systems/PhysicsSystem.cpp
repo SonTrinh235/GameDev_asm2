@@ -5,6 +5,8 @@
 void PhysicSystem::updatePlayer(Player& player, const std::vector<WindColumn>& winds, float deltaTime) {
     if (player.hp <= 0) return;
 
+    player.previousY = player.position.y;
+
     if (player.hitTimer > 0) {
         player.hitTimer -= deltaTime;
     }

@@ -3,6 +3,7 @@
 #include "../../include/entities/Explosion.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets, 
                             const std::vector<Platform>& platforms, 
@@ -19,22 +20,34 @@ void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets,
     //     player.isGrounded = true;
     // }
 
-    for (const auto& plat : platforms) {
-        SDL_FRect platRect = plat.getRect();
-        if (player.dropThroughTimer <= 0.0f && player.velocity.y >= 0) {
+    if (player.dropThroughTimer <= 0.0f && player.velocity.y >= 0.0f) {
+        float prevBottom = player.previousY + player.height;
+        float currBottom = player.position.y + player.height;
+        float bestLandingY = std::numeric_limits<float>::max();
+        bool foundLanding = false;
+
+        for (const auto& plat : platforms) {
+            SDL_FRect platRect = plat.getRect();
             bool collisionX = (player.position.x + player.width > plat.x) && (player.position.x < plat.x + plat.width);
-            bool feetHitting = (player.position.y + player.height >= plat.y) && (player.position.y + player.height <= plat.y + 15.0f);
-            if (collisionX && feetHitting) {
-                player.position.y = plat.y - player.height;
-                player.velocity.y = 0;
-                player.isGrounded = true;
+            if (!collisionX) continue;
+
+            bool crossedTopThisFrame = (prevBottom <= plat.y + 1.0f) && (currBottom >= plat.y);
+            bool feetInsideSurface = (currBottom >= plat.y) && (currBottom <= plat.y + 15.0f);
+            if ((crossedTopThisFrame || feetInsideSurface) && plat.y < bestLandingY) {
+                bestLandingY = plat.y;
+                foundLanding = true;
             }
+        }
+
+        if (foundLanding) {
+            player.position.y = bestLandingY - player.height;
+            player.velocity.y = 0.0f;
+            player.isGrounded = true;
         }
     }
 
     SDL_FRect playerRect = player.getRect();
     
-    // --- Logic Items ---
     for (auto& item : items) {
         if (!item.active) continue;
         
@@ -47,7 +60,6 @@ void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets,
         }
     }
 
-    // --- Logic Projectiles ---
     for (size_t i = 0; i < bullets.size(); ++i) {
         auto& p = bullets[i];
         if (!p.active) continue;
@@ -93,7 +105,6 @@ void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets,
                     player.hitTimer = 0.2f;
                     if (player.hp < 0) player.hp = 0;
                 }
-                // Ultimate should also apply once on hit to avoid multi-frame repeated damage.
                 p.active = false;
                 continue; 
             }

@@ -4,6 +4,7 @@
 Player::Player(int playerId, float startX, float startY) 
     : id(playerId), 
       position(startX, startY), 
+      previousY(startY),
       velocity(0, 0), 
       width(65.5), height(65.5),
       isGrounded(false), 

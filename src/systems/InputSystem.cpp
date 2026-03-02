@@ -19,10 +19,12 @@ void InputSystem::update(Player& player, float deltaTime, const bool* keys) {
     if (player.id == 1) {
         if (keys[SDL_SCANCODE_A]) {
             player.velocity.x = -MOVE_SPEED;
+            //player.aimAngle = 180.0f;
             player.facingRight = false;
         }
         if (keys[SDL_SCANCODE_D]) {
             player.velocity.x = MOVE_SPEED;
+            //player.aimAngle = 0.0f;
             player.facingRight = true;
         }
         
@@ -33,10 +35,12 @@ void InputSystem::update(Player& player, float deltaTime, const bool* keys) {
     } else {
         if (keys[SDL_SCANCODE_LEFT]) {
             player.velocity.x = -MOVE_SPEED;
+            //player.aimAngle = 180.0f;
             player.facingRight = false;
         }
         if (keys[SDL_SCANCODE_RIGHT]) {
             player.velocity.x = MOVE_SPEED;
+            //player.aimAngle = 0.0f;
             player.facingRight = true;
         }
 
