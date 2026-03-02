@@ -14,6 +14,8 @@ void InputSystem::update(Player& player, float deltaTime, const bool* keys) {
     }
 
     player.velocity.x = 0;
+    SDL_Scancode dropKey = (player.id == 1) ? SDL_SCANCODE_S : SDL_SCANCODE_DOWN;
+
     if (player.id == 1) {
         if (keys[SDL_SCANCODE_A]) {
             player.velocity.x = -MOVE_SPEED;
@@ -43,6 +45,16 @@ void InputSystem::update(Player& player, float deltaTime, const bool* keys) {
             player.isGrounded = false;
         }
     }
+
+    bool dropPressed = keys[dropKey];
+    if (dropPressed && !player.dropKeyHeld && player.isGrounded) {
+        player.dropThroughTimer = 0.18f;
+        player.isGrounded = false;
+        if (player.velocity.y < 220.0f) {
+            player.velocity.y = 220.0f;
+        }
+    }
+    player.dropKeyHeld = dropPressed;
 
     SDL_Scancode shootKey = (player.id == 1) ? SDL_SCANCODE_SPACE : SDL_SCANCODE_RETURN;
 

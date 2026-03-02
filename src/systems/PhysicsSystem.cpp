@@ -8,6 +8,12 @@ void PhysicSystem::updatePlayer(Player& player, const std::vector<WindColumn>& w
     if (player.hitTimer > 0) {
         player.hitTimer -= deltaTime;
     }
+    if (player.dropThroughTimer > 0.0f) {
+        player.dropThroughTimer -= deltaTime;
+        if (player.dropThroughTimer < 0.0f) {
+            player.dropThroughTimer = 0.0f;
+        }
+    }
 
     player.velocity.y += GRAVITY * deltaTime;
 

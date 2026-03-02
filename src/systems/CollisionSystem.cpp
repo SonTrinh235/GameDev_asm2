@@ -21,7 +21,7 @@ void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets,
 
     for (const auto& plat : platforms) {
         SDL_FRect platRect = plat.getRect();
-        if (player.velocity.y >= 0) {
+        if (player.dropThroughTimer <= 0.0f && player.velocity.y >= 0) {
             bool collisionX = (player.position.x + player.width > plat.x) && (player.position.x < plat.x + plat.width);
             bool feetHitting = (player.position.y + player.height >= plat.y) && (player.position.y + player.height <= plat.y + 15.0f);
             if (collisionX && feetHitting) {

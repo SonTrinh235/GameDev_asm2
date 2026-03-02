@@ -444,6 +444,10 @@ void Game::resetMatchEntities() {
     player2->currentChargeTime = 0.0f;
     player1->useUltimate = false;
     player2->useUltimate = false;
+    player1->dropThroughTimer = 0.0f;
+    player2->dropThroughTimer = 0.0f;
+    player1->dropKeyHeld = false;
+    player2->dropKeyHeld = false;
     isDraggingVolumeSlider = false;
     aiMoveSwitchTimer = 0.0f;
     aiJumpCooldownTimer = 0.0f;
