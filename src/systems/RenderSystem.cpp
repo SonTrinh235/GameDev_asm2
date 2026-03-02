@@ -348,14 +348,51 @@ void RenderSystem::renderSideManaBar(SDL_Renderer* renderer, const Player& playe
 }
 
 void RenderSystem::renderUI(SDL_Renderer* renderer, const Player& p1, const Player& p2) {
-    float barW = 300.0f, hpH = 25.0f, offset = 20.0f;
-    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
-    SDL_FRect bg1 = { offset, offset, barW, hpH }, bg2 = { SCREEN_WIDTH - barW - offset, offset, barW, hpH };
-    SDL_RenderFillRect(renderer, &bg1); SDL_RenderFillRect(renderer, &bg2);
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_FRect hp1 = { offset, offset, (p1.hp / p1.maxHp) * barW, hpH };
-    SDL_FRect hp2 = { SCREEN_WIDTH - offset - ((p2.hp / p2.maxHp) * barW), offset, (p2.hp / p2.maxHp) * barW, hpH };
-    SDL_RenderFillRect(renderer, &hp1); SDL_RenderFillRect(renderer, &hp2);
+    auto clampf = [](float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); };
+    float hpRatio1 = clampf(p1.hp / p1.maxHp, 0.0f, 1.0f);
+    float hpRatio2 = clampf(p2.hp / p2.maxHp, 0.0f, 1.0f);
+
+    const float panelW = 360.0f;
+    const float panelH = 42.0f;
+    const float margin = 16.0f;
+    const float hpBarH = 20.0f;
+    const float innerPad = 12.0f;
+    const float topY = 14.0f;
+
+    SDL_FRect panel1 = { margin, topY, panelW, panelH };
+    SDL_FRect panel2 = { SCREEN_WIDTH - margin - panelW, topY, panelW, panelH };
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 130);
+    SDL_FRect shadow1 = { panel1.x + 2.0f, panel1.y + 2.0f, panel1.w, panel1.h };
+    SDL_FRect shadow2 = { panel2.x + 2.0f, panel2.y + 2.0f, panel2.w, panel2.h };
+    SDL_RenderFillRect(renderer, &shadow1);
+    SDL_RenderFillRect(renderer, &shadow2);
+
+    SDL_SetRenderDrawColor(renderer, 24, 30, 48, 220);
+    SDL_RenderFillRect(renderer, &panel1);
+    SDL_RenderFillRect(renderer, &panel2);
+    SDL_SetRenderDrawColor(renderer, 214, 214, 230, 255);
+    SDL_RenderRect(renderer, &panel1);
+    SDL_RenderRect(renderer, &panel2);
+
+    SDL_FRect hpBg1 = { panel1.x + innerPad, panel1.y + 10.0f, panelW - innerPad * 2.0f, hpBarH };
+    SDL_FRect hpBg2 = { panel2.x + innerPad, panel2.y + 10.0f, panelW - innerPad * 2.0f, hpBarH };
+    SDL_SetRenderDrawColor(renderer, 60, 40, 40, 255);
+    SDL_RenderFillRect(renderer, &hpBg1);
+    SDL_RenderFillRect(renderer, &hpBg2);
+
+    SDL_FRect hpFill1 = { hpBg1.x, hpBg1.y, hpBg1.w * hpRatio1, hpBg1.h };
+    SDL_FRect hpFill2 = { hpBg2.x + hpBg2.w * (1.0f - hpRatio2), hpBg2.y, hpBg2.w * hpRatio2, hpBg2.h };
+    SDL_SetRenderDrawColor(renderer, 210, 45, 58, 255);
+    SDL_RenderFillRect(renderer, &hpFill1);
+    SDL_RenderFillRect(renderer, &hpFill2);
+
+    SDL_SetRenderDrawColor(renderer, 255, 155, 155, 120);
+    SDL_FRect hpGloss1 = { hpFill1.x, hpFill1.y, hpFill1.w, hpFill1.h * 0.35f };
+    SDL_FRect hpGloss2 = { hpFill2.x, hpFill2.y, hpFill2.w, hpFill2.h * 0.35f };
+    SDL_RenderFillRect(renderer, &hpGloss1);
+    SDL_RenderFillRect(renderer, &hpGloss2);
 }
 
 void RenderSystem::renderGameOver(SDL_Renderer* renderer, const Player& p1, const Player& p2) {
