@@ -367,6 +367,11 @@ void Game::update(float deltaTime) {
     }
     ammoSys.update(*player2, deltaTime, bullets);
 
+    if (player1->velocity.x > 1.0f) player1->facingRight = true;
+    else if (player1->velocity.x < -1.0f) player1->facingRight = false;
+    if (player2->velocity.x > 1.0f) player2->facingRight = true;
+    else if (player2->velocity.x < -1.0f) player2->facingRight = false;
+
     physicsSys.updatePlayer(*player1, winds, deltaTime);
     physicsSys.updatePlayer(*player2, winds, deltaTime);
     physicsSys.updateBullets(bullets, winds, deltaTime);
@@ -466,6 +471,8 @@ void Game::resetMatchEntities() {
     player2->velocity.y = 0;
     player1->aimAngle = 0.0f;
     player2->aimAngle = 180.0f;
+    player1->facingRight = true;
+    player2->facingRight = false;
 
     bullets.clear();
     items.clear();

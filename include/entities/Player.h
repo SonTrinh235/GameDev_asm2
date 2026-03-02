@@ -27,6 +27,7 @@ struct Player {
     float infiniteManaTimer;
     float dropThroughTimer;
     bool dropKeyHeld;
+    bool facingRight;
 
     Player(int playerId, float x, float y); 
     SDL_FRect getRect() const;

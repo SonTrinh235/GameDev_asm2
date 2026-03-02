@@ -84,14 +84,18 @@ void CollisionSystem::update(Player& player, std::vector<Projectile>& bullets,
         if (SDL_HasRectIntersectionFloat(&bulletRect, &playerRect)) {
             if (p.ownerId != player.id) {
                 if (player.shieldTimer <= 0.0f) {
-                    player.hp -= p.damage;
+                    if (p.level == 4) {
+                        float ultimateDamage = player.hp * 0.5f;
+                        player.hp -= ultimateDamage;
+                    } else {
+                        player.hp -= p.damage;
+                    }
                     player.hitTimer = 0.2f;
                     if (player.hp < 0) player.hp = 0;
                 }
-                if (p.level != 4) {
-                    p.active = false;
-                    continue; 
-                }
+                // Ultimate should also apply once on hit to avoid multi-frame repeated damage.
+                p.active = false;
+                continue; 
             }
         }
 

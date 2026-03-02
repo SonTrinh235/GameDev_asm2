@@ -17,28 +17,7 @@ void AmmoSystem::update(Player& player, float deltaTime, std::vector<Projectile>
             float centerX = player.position.x + player.width / 2;
             float centerY = player.position.y + player.height / 2;
 
-            const bool* keys = SDL_GetKeyboardState(NULL);
-            float direction = 0.0f;
-
-            if (player.id == 1) {
-                if (keys[SDL_SCANCODE_A]) direction = -1.0f;
-                else if (keys[SDL_SCANCODE_D]) direction = 1.0f;
-            } else {
-                if (keys[SDL_SCANCODE_LEFT]) direction = -1.0f;
-                else if (keys[SDL_SCANCODE_RIGHT]) direction = 1.0f;
-            }
-
-            if (direction == 0.0f) {
-                float angle = player.aimAngle;
-                while (angle < 0) angle += 360.0f;
-                while (angle >= 360.0f) angle -= 360.0f;
-
-                if (angle > 90.0f && angle < 270.0f) {
-                    direction = -1.0f;
-                } else {
-                    direction = 1.0f;
-                }
-            }
+            float direction = player.facingRight ? 1.0f : -1.0f;
 
             float velX = direction * (BULLET_SPEED * 1.2f);
             float velY = 0; 

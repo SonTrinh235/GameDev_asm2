@@ -310,7 +310,7 @@ void RenderSystem::renderPlayer(SDL_Renderer* renderer, const Player& player, SD
 
     SDL_Texture* currentTex = (player.id == 1) ? texP1 : texP2;
     if (currentTex) {
-        SDL_FlipMode flip = (player.aimAngle > 90 && player.aimAngle < 270) ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+        SDL_FlipMode flip = player.facingRight ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
         if (player.hitTimer > 0) SDL_SetTextureColorMod(currentTex, 255, 150, 150);
         else SDL_SetTextureColorMod(currentTex, 255, 255, 255);
         

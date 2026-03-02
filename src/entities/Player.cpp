@@ -14,6 +14,7 @@ Player::Player(int playerId, float startX, float startY)
       hp(100.0f), maxHp(100.0f),
       shieldTimer(0.0f), infiniteManaTimer(0.0f),
       dropThroughTimer(0.0f), dropKeyHeld(false),
+      facingRight(playerId == 1),
       hitTimer(0.0f)
 {
     useUltimate = false;
